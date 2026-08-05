@@ -105,7 +105,7 @@ export async function generateReportPPT(dateRange: string) {
     ["Twitter", "610.8K", "450", "1.8%"]
   ];
 
-  slide3.addTable(rows, { 
+  slide3.addTable(rows as any, { 
     x: 0.5, y: 1.5, w: 9.0, 
     rowH: 0.6,
     fill: "FFFFFF",
