@@ -108,12 +108,12 @@ export async function generateReportPPT(dateRange: string) {
   slide3.addTable(rows as any, { 
     x: 0.5, y: 1.5, w: 9.0, 
     rowH: 0.6,
-    fill: "FFFFFF",
+    fill: { color: "FFFFFF" },
     color: "333333",
     fontSize: 14,
     valign: "middle",
     border: { type: "solid", color: "E2E8F0", pt: 1 }
-  });
+  } as any);
 
   // Generate and save the file
   pres.writeFile({ fileName: `SyncFlow_Report_${formatDate(new Date())}.pptx` });
