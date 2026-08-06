@@ -223,6 +223,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return;
     }
 
+    if (selectedNetwork.title === 'Instagram') {
+      window.location.href = `/api/auth/instagram?brandId=${activeBrandId}`;
+      return;
+    }
+
     if (!userIdInput.trim()) return;
 
     const res = await addAccount(selectedNetwork.title, userIdInput, activeBrandId, activeBrand.name);

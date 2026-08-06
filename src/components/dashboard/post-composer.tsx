@@ -307,22 +307,25 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       brandId: localStorage.getItem("activeBrandId") || "",
     }
     
-    if (network === 'YouTube' || network === 'Threads') {
-      // YouTube requires mediaUrl, Threads doesn't
-      if (network === 'YouTube' && !mediaUrl) {
-         toast.error("YouTube requires a video to be uploaded.");
+    if (network === 'YouTube' || network === 'Threads' || network === 'Instagram') {
+      // YouTube and Instagram require mediaUrl, Threads doesn't
+      if ((network === 'YouTube' || network === 'Instagram') && !mediaUrl) {
+         toast.error(`${network} requires an image or video to be uploaded.`);
          return;
       }
       setIsPublishing(true);
       try {
-        const endpoint = network === 'YouTube' ? '/api/youtube/upload' : '/api/threads/upload';
+        let endpoint = '/api/threads/upload';
+        if (network === 'YouTube') endpoint = '/api/youtube/upload';
+        if (network === 'Instagram') endpoint = '/api/instagram/upload';
+        
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             brandId: payload.brandId,
             accountHandle: accountName,
-            title: content.split('\n')[0].substring(0, 50) || "SyncFlow Video",
+            title: content.split('\n')[0].substring(0, 50) || "SyncFlow Post",
             description: content,
             content: content,
             mediaUrl: mediaUrl,
