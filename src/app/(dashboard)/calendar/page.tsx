@@ -191,7 +191,8 @@ export default function CalendarPage() {
       postType: fullDbPost.post_type as any,
       content: fullDbPost.content || "",
       mediaUrls: fullDbPost.media_urls || [],
-      scheduledTimestamp: fullDbPost.scheduled_timestamp || null
+      scheduledTimestamp: fullDbPost.scheduled_timestamp || null,
+      brandId: activeBrandId || ""
     };
   }, [editingPostId, dbPosts]);
 

@@ -358,7 +358,8 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       content,
       mediaUrls: mediaUrl ? [mediaUrl] : [],
       scheduledTimestamp: scheduledDateObj.toISOString(),
-      accountName
+      accountName,
+      brandId: localStorage.getItem("activeBrandId") || "",
     }
     
     if (onSavePost) onSavePost(payload)

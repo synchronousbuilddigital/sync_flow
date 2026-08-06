@@ -5,15 +5,15 @@ import { useState, useEffect } from "react"
 import { getYouTubeAnalytics, type ChannelAnalytics } from "@/app/actions/analytics"
 
 const followerData = [
-  { date: 'Jul 3', followers: 641, following: 700 },
-  { date: 'Jul 7', followers: 642, following: 701 },
-  { date: 'Jul 11', followers: 642, following: 701 },
-  { date: 'Jul 15', followers: 643, following: 702 },
-  { date: 'Jul 19', followers: 644, following: 703 },
-  { date: 'Jul 23', followers: 645, following: 703 },
-  { date: 'Jul 27', followers: 647, following: 704 },
-  { date: 'Jul 31', followers: 648, following: 705 },
-  { date: 'Aug 4', followers: 649, following: 706 },
+  { date: 'Jul 3', followers: 1200, following: 140, views: 1200, subscribers: 10 },
+  { date: 'Jul 7', followers: 641, following: 700, views: 641, subscribers: 5 },
+  { date: 'Jul 11', followers: 642, following: 701, views: 642, subscribers: 2 },
+  { date: 'Jul 15', followers: 643, following: 702, views: 643, subscribers: 8 },
+  { date: 'Jul 19', followers: 644, following: 703, views: 644, subscribers: 6 },
+  { date: 'Jul 23', followers: 645, following: 703, views: 645, subscribers: 7 },
+  { date: 'Jul 27', followers: 647, following: 704, views: 647, subscribers: 9 },
+  { date: 'Jul 31', followers: 648, following: 705, views: 648, subscribers: 4 },
+  { date: 'Aug 4', followers: 649, following: 706, views: 649, subscribers: 12 },
 ]
 
 const balanceData = [
