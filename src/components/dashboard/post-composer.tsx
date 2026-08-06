@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import { getCloudinarySignature } from "@/app/actions/cloudinary"
 
-export type Network = 'Instagram' | 'Facebook' | 'TikTok' | 'YouTube' | 'LinkedIn' | 'Twitter'
+export type Network = 'Instagram' | 'Facebook' | 'TikTok' | 'YouTube' | 'LinkedIn' | 'Twitter' | 'Threads'
 export type PostType = 'Post' | 'Story' | 'Reel' | 'Video' | 'Short'
 
 export interface PostPayload {
@@ -207,6 +207,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       case 'YouTube': return ['Video', 'Short']
       case 'LinkedIn': return ['Post']
       case 'Twitter': return ['Post']
+      case 'Threads': return ['Post']
     }
   }
 
@@ -306,10 +307,16 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       brandId: localStorage.getItem("activeBrandId") || "",
     }
     
-    if (network === 'YouTube' && mediaUrl) {
+    if (network === 'YouTube' || network === 'Threads') {
+      // YouTube requires mediaUrl, Threads doesn't
+      if (network === 'YouTube' && !mediaUrl) {
+         toast.error("YouTube requires a video to be uploaded.");
+         return;
+      }
       setIsPublishing(true);
       try {
-        const response = await fetch('/api/youtube/upload', {
+        const endpoint = network === 'YouTube' ? '/api/youtube/upload' : '/api/threads/upload';
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -317,6 +324,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
             accountHandle: accountName,
             title: content.split('\n')[0].substring(0, 50) || "SyncFlow Video",
             description: content,
+            content: content,
             mediaUrl: mediaUrl,
           }),
         });
@@ -324,11 +332,11 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
         setIsPublishing(false);
 
         if (!response.ok) {
-          toast.error(`YouTube Upload Failed: ${result.error}`);
+          toast.error(`${network} Upload Failed: ${result.error}`);
           return;
         }
 
-        toast.success(`Video successfully uploaded to YouTube! (ID: ${result.videoId})`);
+        toast.success(`Post successfully published to ${network}! (ID: ${result.videoId || result.threadId})`);
       } catch (err: any) {
         setIsPublishing(false);
         toast.error(`Upload error: ${err.message}`);
