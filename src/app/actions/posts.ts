@@ -18,6 +18,7 @@ export async function createPost(payload: PostPayload) {
     .from('posts')
     .insert({
       user_id: user.id,
+      brand_id: payload.brandId,
       network: payload.network,
       account_name: payload.accountName,
       post_type: payload.postType,
@@ -134,19 +135,20 @@ export async function hardDeletePost(id: string) {
   return true
 }
 
-export async function getPosts() {
+export async function getPosts(brandId: string) {
   const supabase = await createClient()
   
   // Verify authentication
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return [] // Return empty array if not logged in
+  if (authError || !user || !brandId) {
+    return [] // Return empty array if not logged in or no brand selected
   }
 
-  // Fetch only this user's posts
+  // Fetch only this user's posts for the specific brand
   const { data, error } = await supabase
     .from('posts')
     .select('*')
+    .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
   if (error) {

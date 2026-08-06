@@ -1,6 +1,8 @@
 import { Camera, Globe, PlayCircle, Play as Youtube, Briefcase, ChevronDown, Download } from "lucide-react"
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react"
+import { getYouTubeAnalytics, type ChannelAnalytics } from "@/app/actions/analytics"
 
 const followerData = [
   { date: 'Jul 3', followers: 641, following: 700 },
@@ -52,6 +54,23 @@ const countryData = [
 const COLORS = ['#8B5CF6', '#F472B6', '#94A3B8']
 
 export function AccountAnalytics({ network, account }: { network: string, account: string }) {
+  const [realStats, setRealStats] = useState<ChannelAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (network === 'YouTube') {
+        const brandId = localStorage.getItem("activeBrandId");
+        if (brandId && account) {
+          setIsLoading(true);
+          const stats = await getYouTubeAnalytics(brandId, account);
+          setRealStats(stats);
+          setIsLoading(false);
+        }
+      }
+    }
+    fetchStats();
+  }, [network, account]);
   
   const getNetworkIcon = () => {
     switch(network) {
@@ -112,7 +131,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Growth</h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={followerData}>
+                <AreaChart data={realStats ? realStats.followerData : followerData}>
                   <defs>
                     <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
@@ -124,7 +143,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                     labelStyle={{fontWeight: 'bold', color: '#1e293b'}}
                   />
-                  <Area type="monotone" dataKey="followers" stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorFollowers)" />
+                  <Area type="monotone" dataKey={network === 'YouTube' ? 'views' : 'followers'} stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorFollowers)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -133,16 +152,16 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
           {/* KPI Sidebar */}
           <div className="w-full md:w-64 bg-slate-50 border-l border-slate-100 p-6 flex flex-col gap-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
-               <p className="text-2xl font-bold text-slate-800">649</p>
-               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">Followers</p>
+               {isLoading ? <div className="h-8 w-16 bg-slate-200 animate-pulse mx-auto rounded"></div> : <p className="text-2xl font-bold text-slate-800">{realStats ? realStats.followers.toLocaleString() : "649"}</p>}
+               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">{network === 'YouTube' ? 'Subscribers' : 'Followers'}</p>
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
-               <p className="text-2xl font-bold text-slate-800">706</p>
-               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">Following</p>
+               {isLoading ? <div className="h-8 w-16 bg-slate-200 animate-pulse mx-auto rounded"></div> : <p className="text-2xl font-bold text-slate-800">{realStats ? realStats.views.toLocaleString() : "706"}</p>}
+               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">{network === 'YouTube' ? 'Total Views' : 'Following'}</p>
             </div>
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm text-center">
-               <p className="text-2xl font-bold text-slate-800">124</p>
-               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">Posts</p>
+               {isLoading ? <div className="h-8 w-16 bg-slate-200 animate-pulse mx-auto rounded"></div> : <p className="text-2xl font-bold text-slate-800">{realStats ? realStats.posts.toLocaleString() : "124"}</p>}
+               <p className="text-[11px] font-bold uppercase text-slate-500 mt-1">{network === 'YouTube' ? 'Videos' : 'Posts'}</p>
             </div>
           </div>
         </div>
@@ -152,7 +171,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Balance of Followers</h3>
           <div className="h-[150px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={balanceData}>
+              <BarChart data={realStats ? realStats.balanceData : balanceData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} dy={10} />
                 <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
@@ -176,7 +195,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={genderData}
+                    data={realStats ? realStats.genderData : genderData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -184,7 +203,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {genderData.map((entry, index) => (
+                    {(realStats ? realStats.genderData : genderData).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -219,7 +238,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={countryData}
+                    data={realStats ? realStats.countryData : countryData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -227,7 +246,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {countryData.map((entry, index) => (
+                    {(realStats ? realStats.countryData : countryData).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'][index % 5]} />
                     ))}
                   </Pie>

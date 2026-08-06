@@ -2,79 +2,73 @@
 
 import { createClient } from "@/lib/supabase/server"
 
-export type SocialAccount = {
+export type Idea = {
   id: string
   user_id: string
   brand_id: string
-  brand_name?: string
-  network: string
-  account_handle: string
+  column_id: string
+  title: string
+  description?: string
+  network?: string
   created_at: string
 }
 
-export async function getAccounts(brandId?: string): Promise<SocialAccount[] | null> {
+export async function getIdeas(brandId: string): Promise<Idea[] | null> {
   const supabase = await createClient()
   
-  // Verify user is logged in
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    console.error("Auth error fetching accounts:", authError)
+    console.error("Auth error fetching ideas:", authError)
     return null
   }
 
-  let query = supabase
-    .from('social_accounts')
+  const { data, error } = await supabase
+    .from('ideas')
     .select('*')
+    .eq('brand_id', brandId)
     .order('created_at', { ascending: false })
 
-  if (brandId) {
-    query = query.eq('brand_id', brandId)
-  }
-
-  const { data, error } = await query
-
   if (error) {
-    console.error("Supabase fetch accounts error:", error)
+    console.error("Supabase fetch ideas error:", error)
     return null
   }
 
-  return data as SocialAccount[]
+  return data as Idea[]
 }
 
-export async function addAccount(network: string, accountHandle: string, brandId: string, brandName: string) {
+export async function addIdea(brandId: string, title: string, description?: string, network?: string) {
   const supabase = await createClient()
   
-  // Verify user is logged in
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    console.error("Auth error adding account:", authError)
+    console.error("Auth error adding idea:", authError)
     return { success: false, error: "Unauthorized" }
   }
 
-  // Insert the account
   const { data, error } = await supabase
-    .from('social_accounts')
+    .from('ideas')
     .insert([
       { 
         user_id: user.id,
         brand_id: brandId,
-        brand_name: brandName,
-        network: network,
-        account_handle: accountHandle
+        title,
+        description,
+        network,
+        column_id: 'unassigned'
       }
     ])
     .select()
     .single()
 
   if (error) {
-    console.error("Supabase insert account error:", error)
+    console.error("Supabase insert idea error:", error)
     return { success: false, error: error.message }
   }
 
   return { success: true, data }
 }
 
-export async function deleteAccountByHandle(network: string, accountHandle: string, brandId: string) {
+export async function updateIdeaColumn(ideaId: string, newColumnId: string) {
   const supabase = await createClient()
   
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -83,15 +77,13 @@ export async function deleteAccountByHandle(network: string, accountHandle: stri
   }
 
   const { error } = await supabase
-    .from('social_accounts')
-    .delete()
+    .from('ideas')
+    .update({ column_id: newColumnId })
+    .eq('id', ideaId)
     .eq('user_id', user.id)
-    .eq('brand_id', brandId)
-    .eq('network', network)
-    .eq('account_handle', accountHandle)
 
   if (error) {
-    console.error("Supabase delete account error:", error)
+    console.error("Supabase update idea error:", error)
     return { success: false, error: error.message }
   }
 

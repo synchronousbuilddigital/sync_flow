@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { getIdeas, addIdea, updateIdeaColumn, Idea as DBIdea } from "@/app/actions/ideas";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -61,7 +62,36 @@ const INITIAL_COLUMNS: { id: ColumnId; title: string }[] = [
 
 export default function IdeasBoardPage() {
   const [columns, setColumns] = useState<{ id: string; title: string }[]>(INITIAL_COLUMNS);
-  const [ideas, setIdeas] = useState<Idea[]>(INITIAL_IDEAS);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const loadIdeas = async () => {
+      const brandId = localStorage.getItem("activeBrandId");
+      if (!brandId) {
+        setIdeas([]);
+        setActiveBrandId(null);
+        return;
+      }
+      setActiveBrandId(brandId);
+      const data = await getIdeas(brandId);
+      if (data) {
+        setIdeas(data.map(d => ({
+          id: d.id,
+          columnId: d.column_id,
+          title: d.title,
+          description: d.description || undefined,
+          network: d.network as any || undefined
+        })));
+      }
+    };
+
+    loadIdeas();
+    
+    const onBrandChanged = () => loadIdeas();
+    window.addEventListener("brandChanged", onBrandChanged);
+    return () => window.removeEventListener("brandChanged", onBrandChanged);
+  }, []);
   const [draggedIdeaId, setDraggedIdeaId] = useState<string | null>(null);
   const clickStartPosRef = useRef({ x: 0, y: 0 });
 
@@ -166,34 +196,54 @@ export default function IdeasBoardPage() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, columnId: ColumnId) => {
+  const handleDrop = async (e: React.DragEvent, columnId: ColumnId) => {
     e.preventDefault();
     const ideaId = e.dataTransfer.getData("text/plain") || draggedIdeaId;
     if (!ideaId) return;
 
+    // Optimistic update
     setIdeas(prev => 
       prev.map(idea => 
         idea.id === ideaId ? { ...idea, columnId } : idea
       )
     );
     setDraggedIdeaId(null);
+    
+    // DB Update
+    if (!ideaId.startsWith("temp-")) {
+       await updateIdeaColumn(ideaId, columnId);
+    }
   };
 
-  const handleAddIdea = (columnId: ColumnId) => {
-    if (!newIdeaTitle.trim()) {
+  const handleAddIdea = async (columnId: ColumnId) => {
+    if (!newIdeaTitle.trim() || !activeBrandId) {
       setAddingToColumn(null);
+      if (!activeBrandId) toast.error("Please select a brand first.");
       return;
     }
     
-    const newIdea: Idea = {
-      id: `idea-${Date.now()}`,
-      columnId,
-      title: newIdeaTitle,
-    };
-    
-    setIdeas([...ideas, newIdea]);
+    const title = newIdeaTitle;
     setNewIdeaTitle("");
     setAddingToColumn(null);
+    
+    const res = await addIdea(activeBrandId, title);
+    if (res.success && res.data) {
+      const d = res.data;
+      setIdeas(prev => [...prev, {
+        id: d.id,
+        columnId: d.column_id,
+        title: d.title,
+        description: d.description || undefined,
+        network: d.network as any || undefined
+      }]);
+      // If added to a specific column and not unassigned, update it immediately
+      if (columnId !== 'unassigned') {
+        await updateIdeaColumn(d.id, columnId);
+        setIdeas(prev => prev.map(i => i.id === d.id ? { ...i, columnId } : i));
+      }
+    } else {
+      toast.error("Failed to save idea to database.");
+    }
   };
 
   return (

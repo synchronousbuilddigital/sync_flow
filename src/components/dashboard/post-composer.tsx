@@ -23,6 +23,7 @@ export interface PostPayload {
   mediaUrls: string[]
   scheduledTimestamp: string | null // ISO string if scheduled, null if instant
   accountName?: string
+  brandId: string
 }
 
 interface PostComposerProps {
@@ -51,6 +52,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
   const [content, setContent] = useState("")
   const [mediaUrl, setMediaUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
 
   // Scheduling State
   const [isScheduling, setIsScheduling] = useState(false)
@@ -290,7 +292,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
     return true
   }
 
-  const handlePostNow = () => {
+  const handlePostNow = async () => {
     if (!validatePost()) return
     
     const payload: PostPayload = {
@@ -300,11 +302,43 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       content,
       mediaUrls: mediaUrl ? [mediaUrl] : [],
       scheduledTimestamp: null,
-      accountName
+      accountName,
+      brandId: localStorage.getItem("activeBrandId") || "",
+    }
+    
+    if (network === 'YouTube' && mediaUrl) {
+      setIsPublishing(true);
+      try {
+        const response = await fetch('/api/youtube/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brandId: payload.brandId,
+            accountHandle: accountName,
+            title: content.split('\n')[0].substring(0, 50) || "SyncFlow Video",
+            description: content,
+            mediaUrl: mediaUrl,
+          }),
+        });
+        const result = await response.json();
+        setIsPublishing(false);
+
+        if (!response.ok) {
+          toast.error(`YouTube Upload Failed: ${result.error}`);
+          return;
+        }
+
+        toast.success(`Video successfully uploaded to YouTube! (ID: ${result.videoId})`);
+      } catch (err: any) {
+        setIsPublishing(false);
+        toast.error(`Upload error: ${err.message}`);
+        return;
+      }
+    } else {
+      toast.success(`${postType} published instantly to ${network}!`)
     }
     
     if (onSavePost) onSavePost(payload)
-    toast.success(`${postType} published instantly to ${network}!`)
     onClose()
   }
 

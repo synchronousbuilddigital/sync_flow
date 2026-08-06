@@ -8,7 +8,8 @@ import {
   FileBarChart,
   Hash,
   Settings,
-  Lightbulb
+  Lightbulb,
+  Trash2
 } from "lucide-react"
 
 import {
@@ -28,7 +29,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { toast } from "sonner"
-import { getAccounts, addAccount } from "@/app/actions/accounts"
+import { getAccounts, addAccount, deleteAccountByHandle } from "@/app/actions/accounts"
+import { getBrands, createBrand, Brand } from "@/app/actions/brands"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu"
+import { ChevronDown, Check as CheckIcon } from "lucide-react"
+
 
 const navItems = {
   main: [
@@ -120,8 +125,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const currentNetwork = searchParams.get("network")
   const currentAccount = searchParams.get("account")
 
+  const [brands, setBrands] = React.useState<Brand[]>([])
+  const [activeBrandId, setActiveBrandId] = React.useState<string | null>(null)
+  const [isBrandModalOpen, setIsBrandModalOpen] = React.useState(false)
+  const [newBrandName, setNewBrandName] = React.useState("")
+
   const [accounts, setAccounts] = React.useState<Record<string, string[]>>({})
-  
   const [activeAccounts, setActiveAccounts] = React.useState<Record<string, string>>({})
   
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -129,9 +138,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [userIdInput, setUserIdInput] = React.useState("")
 
   React.useEffect(() => {
+    async function initData() {
+      try {
+        const brandsData = await getBrands();
+        if (brandsData && brandsData.length > 0) {
+          setBrands(brandsData);
+          
+          // Try to load active brand from local storage, fallback to first brand
+          const savedBrandId = localStorage.getItem("activeBrandId");
+          const initialBrandId = savedBrandId && brandsData.some(b => b.id === savedBrandId) 
+            ? savedBrandId 
+            : brandsData[0].id;
+            
+          setActiveBrandId(initialBrandId);
+        }
+      } catch (err) {
+        console.error("Failed to load brands", err);
+      }
+    }
+    initData();
+  }, []);
+
+  React.useEffect(() => {
+    if (!activeBrandId) {
+      setAccounts({});
+      setActiveAccounts({});
+      return;
+    }
+
+    // Save selection and notify
+    localStorage.setItem("activeBrandId", activeBrandId);
+    window.dispatchEvent(new Event("brandChanged"));
+
     async function loadAccounts() {
       try {
-        const data = await getAccounts();
+        const data = await getAccounts(activeBrandId!); // Pass active brand
         if (data) {
           const accs: Record<string, string[]> = {};
           const active: Record<string, string> = {};
@@ -160,12 +201,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     
     window.addEventListener('open-brand-modal', handleOpenBrandModal);
     return () => window.removeEventListener('open-brand-modal', handleOpenBrandModal);
-  }, []);
+  }, [activeBrandId]);
+
+  const activeBrand = brands.find(b => b.id === activeBrandId);
 
   const handleAddAccount = async () => {
-    if (!userIdInput.trim() || !selectedNetwork) return;
+    if (!selectedNetwork) return;
     
-    const res = await addAccount(selectedNetwork.title, userIdInput);
+    if (!activeBrandId || !activeBrand) {
+      toast.error("Please create a brand first.");
+      return;
+    }
+
+    if (selectedNetwork.title === 'YouTube') {
+      window.location.href = `/api/auth/youtube?brandId=${activeBrandId}`;
+      return;
+    }
+
+    if (!userIdInput.trim()) return;
+
+    const res = await addAccount(selectedNetwork.title, userIdInput, activeBrandId, activeBrand.name);
     if (!res.success) {
       toast.error(`Failed to add account: ${res.error}`);
       return;
@@ -182,12 +237,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }))
     
     setUserIdInput("")
-    setIsModalOpen(false)
-    toast.success(`Connected account @${userIdInput} to ${selectedNetwork.title}`)
-    
-    // Automatically navigate to the new account's dashboard
-    router.push(`/dashboard?network=${selectedNetwork.title}&account=${userIdInput}`)
-  }
+    setIsModalOpen(false);
+    toast.success(`${userIdInput} connected to ${selectedNetwork.title} successfully`);
+  };
+
+  const handleDeleteAccount = async (networkTitle: string, accHandle: string) => {
+    if (!activeBrandId) return;
+    const res = await deleteAccountByHandle(networkTitle, accHandle, activeBrandId);
+    if (res.success) {
+      toast.success(`${accHandle} disconnected successfully`);
+      // Soft refresh state instead of hard reload to prevent Turbopack crash
+      window.dispatchEvent(new Event("brandChanged"));
+      // If we are currently looking at the deleted account, go back to summary
+      if (typeof window !== 'undefined' && window.location.href.includes(accHandle)) {
+         window.location.href = '/dashboard';
+      }
+    } else {
+      toast.error(`Failed to disconnect: ${res.error}`);
+    }
+  };
 
   const getNetworkTheme = (title: string) => {
     switch(title) {
@@ -202,6 +270,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
+  const handleCreateBrand = async () => {
+    if (!newBrandName.trim()) return;
+    const res = await createBrand(newBrandName);
+    if (!res.success) {
+      toast.error(`Failed to create brand: ${res.error}`);
+      return;
+    }
+    const newBrand = res.data;
+    setBrands(prev => [newBrand, ...prev]);
+    setActiveBrandId(newBrand.id);
+    setNewBrandName("");
+    setIsBrandModalOpen(false);
+    toast.success(`Brand "${newBrand.name}" created!`);
+  }
+
+
   const activeTheme = selectedNetwork ? getNetworkTheme(selectedNetwork.title) : getNetworkTheme('')
 
   return (
@@ -212,6 +296,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         className="border-r border-orange-200/50 bg-orange-50/40 w-[320px] backdrop-blur-xl"
       >
         <SidebarContent className="bg-transparent gap-0 py-4 overflow-y-auto">
+          
+          {/* Brand Switcher */}
+          <SidebarGroup className="px-4 pb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full flex items-center justify-between bg-white border border-orange-200 shadow-sm rounded-xl px-4 py-2.5 text-sm font-bold text-orange-950 hover:bg-orange-50 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-orange-600 text-white flex items-center justify-center text-xs">
+                      {activeBrand?.name?.charAt(0) || "B"}
+                    </div>
+                    <span className="truncate max-w-[150px]">{activeBrand?.name || "Select Brand"}</span>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-orange-900/50" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[280px] p-2 rounded-xl border border-orange-100 shadow-xl bg-white" align="start">
+                <div className="px-2 py-1.5 text-[11px] uppercase tracking-wider font-bold text-orange-900/50">Your Brands</div>
+                {brands.map(brand => (
+                  <DropdownMenuItem 
+                    key={brand.id} 
+                    onClick={() => setActiveBrandId(brand.id)}
+                    className="flex items-center gap-2 p-2 mt-1 rounded-lg cursor-pointer font-semibold text-slate-800 focus:bg-orange-50 focus:text-orange-950 transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs">
+                      {brand.name.charAt(0)}
+                    </div>
+                    {brand.name}
+                    {activeBrandId === brand.id && <CheckIcon className="w-4 h-4 ml-auto text-orange-600" />}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator className="my-1 bg-orange-100" />
+                <DropdownMenuItem 
+                  onClick={() => setIsBrandModalOpen(true)}
+                  className="flex items-center gap-2 p-2 rounded-lg cursor-pointer font-bold text-orange-600 focus:bg-orange-50 focus:text-orange-700"
+                >
+                  <Plus className="w-4 h-4" /> Create new brand
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarGroup>
           
           {/* Summary Tab */}
           <SidebarGroup className="py-2">
@@ -279,14 +401,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               setActiveAccounts(prev => ({...prev, [item.title]: acc}))
                               router.push(`/dashboard?network=${item.title}&account=${acc}`)
                             }}
-                            className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                            className={`w-full text-left px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 group/acc ${
                               activeAccounts[item.title] === acc 
                                 ? 'bg-orange-200/60 text-orange-950' 
                                 : 'text-orange-900/60 hover:bg-orange-100/50 hover:text-orange-950'
                             }`}
                           >
                             <div className={`w-1.5 h-1.5 rounded-full ${activeAccounts[item.title] === acc ? 'bg-orange-600' : 'bg-transparent'}`} />
-                            <span className="truncate">@{acc}</span>
+                            <span className="truncate flex-1">@{acc}</span>
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteAccount(item.title, acc);
+                              }}
+                              className="opacity-0 group-hover/acc:opacity-100 hover:bg-red-100 p-1 rounded-md transition-all ml-auto flex-shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            </div>
                           </button>
                         ))}
                       </div>
@@ -381,6 +512,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               Connect Account
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isBrandModalOpen} onOpenChange={setIsBrandModalOpen}>
+        <DialogContent className="sm:max-w-md border-0 shadow-2xl rounded-3xl overflow-hidden p-0 bg-white">
+          <div className="p-8">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-2xl font-extrabold text-slate-900">Create New Brand</DialogTitle>
+              <DialogDescription className="text-sm font-medium text-slate-500 mt-2">
+                Manage all social accounts for a new client or company.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Brand Name</label>
+                <Input 
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  placeholder="e.g. Acme Corp" 
+                  className="h-12 bg-slate-50 border-slate-200 text-slate-900 font-semibold focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="ghost" onClick={() => setIsBrandModalOpen(false)} className="text-slate-600 font-bold hover:bg-slate-100">Cancel</Button>
+                <Button onClick={handleCreateBrand} className="bg-orange-600 text-white font-bold hover:bg-orange-700 px-6">Create Brand</Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
