@@ -129,29 +129,29 @@ export function DashboardNavbar() {
             <DropdownMenuTrigger className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-orange-700 font-bold overflow-hidden border border-orange-200 shadow-sm hover:ring-2 hover:ring-orange-500/30 hover:scale-105 transition-all outline-none">
               {initial}
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 mt-2 rounded-xl p-2 shadow-xl border-slate-100">
+            <DropdownMenuContent align="end" className="w-56 mt-2 rounded-xl p-2 shadow-xl" style={{ background: "rgba(255,255,255,0.25)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(249,115,22,0.4)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(249,115,22,0.15) inset" }}>
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="font-normal px-2 py-1.5">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-semibold leading-none text-slate-800">My Account</p>
-                    <p className="text-xs leading-none text-slate-500 truncate">
+                    <p className="text-sm font-bold leading-none text-gray-900">My Account</p>
+                    <p className="text-xs leading-none text-gray-700 truncate font-medium">
                       {userEmail || "Loading..."}
                     </p>
                   </div>
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator className="my-1.5" />
-              <DropdownMenuItem onClick={() => toast("Profile page coming soon!")} className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-slate-600 focus:bg-slate-50">
-                <User className="mr-2 h-4 w-4 opacity-70" />
+              <DropdownMenuSeparator className="my-1.5 bg-orange-200/50" />
+              <DropdownMenuItem onClick={() => toast("Profile page coming soon!")} className="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold text-gray-900 focus:bg-white/40">
+                <User className="mr-2 h-4 w-4 text-orange-500" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast("Settings coming soon!")} className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-slate-600 focus:bg-slate-50">
-                <Settings className="mr-2 h-4 w-4 opacity-70" />
+              <DropdownMenuItem onClick={() => toast("Settings coming soon!")} className="cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold text-gray-900 focus:bg-white/40">
+                <Settings className="mr-2 h-4 w-4 text-orange-500" />
                 <span>Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1.5" />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium">
-                <LogOut className="mr-2 h-4 w-4 opacity-70" />
+              <DropdownMenuSeparator className="my-1.5 bg-orange-200/50" />
+              <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600 focus:bg-red-50/50 cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold">
+                <LogOut className="mr-2 h-4 w-4 opacity-90" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

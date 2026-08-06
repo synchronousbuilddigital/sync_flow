@@ -3,11 +3,6 @@
 import * as React from "react"
 import {
   FileText,
-  Camera,
-  Globe,
-  Play as Youtube,
-  Briefcase,
-  Music,
   Plus,
   BarChart,
   FileBarChart,
@@ -41,11 +36,13 @@ const navItems = {
     { title: "Ideas", url: "/ideas", icon: Lightbulb },
   ],
   networks: [
-    { title: "Instagram", url: "#", icon: Camera, color: "text-pink-500", brand: true },
-    { title: "Facebook", url: "#", icon: Globe, color: "text-blue-600", brand: true },
-    { title: "TikTok", url: "#", icon: Music, color: "text-black dark:text-white", brand: true },
-    { title: "YouTube", url: "#", icon: Youtube, color: "text-red-500", brand: true },
-    { title: "LinkedIn", url: "#", icon: Briefcase, color: "text-[#0A66C2]", brand: true },
+    { title: "Instagram", url: "#", color: "text-pink-500", brand: true },
+    { title: "Facebook", url: "#", color: "text-blue-600", brand: true },
+    { title: "TikTok", url: "#", color: "text-black dark:text-white", brand: true },
+    { title: "YouTube", url: "#", color: "text-red-500", brand: true },
+    { title: "LinkedIn", url: "#", color: "text-[#0A66C2]", brand: true },
+    { title: "Threads", url: "#", color: "text-black dark:text-white", brand: true },
+    { title: "X (Twitter)", url: "#", color: "text-black dark:text-white", brand: true },
   ],
   secondary: [
     { title: "Reporting", url: "/reporting", icon: BarChart, badge: "New" },
@@ -53,6 +50,67 @@ const navItems = {
     { title: "Hashtag Tracker", url: "/reporting/studio", icon: Hash },
     { title: "Brand settings", url: "/settings", icon: Settings },
   ]
+}
+
+// Brand SVG icons
+const BrandIcon = ({ title, className }: { title: string; className?: string }) => {
+  switch (title) {
+    case "Instagram":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ig-grad" r="150%" cx="30%" cy="107%">
+              <stop offset="0%" stopColor="#fdf497"/>
+              <stop offset="5%" stopColor="#fdf497"/>
+              <stop offset="45%" stopColor="#fd5949"/>
+              <stop offset="60%" stopColor="#d6249f"/>
+              <stop offset="90%" stopColor="#285AEB"/>
+            </radialGradient>
+          </defs>
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig-grad)"/>
+          <circle cx="12" cy="12" r="4.5" stroke="white" strokeWidth="1.8" fill="none"/>
+          <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+        </svg>
+      )
+    case "Facebook":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="#1877F2" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      )
+    case "TikTok":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/>
+        </svg>
+      )
+    case "YouTube":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="#FF0000" xmlns="http://www.w3.org/2000/svg">
+          <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      )
+    case "LinkedIn":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="#0A66C2" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+      )
+    case "Threads":
+      return (
+        <svg className={className} viewBox="0 0 192 192" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M141.537 88.988a66.667 66.667 0 00-2.518-1.143c-1.482-27.307-16.403-42.94-41.457-43.1h-.34c-14.986 0-27.449 6.396-35.12 18.036l13.779 9.452c5.73-8.695 14.724-10.548 21.348-10.548h.229c8.249.053 14.474 2.452 18.503 7.129 2.932 3.405 4.893 8.111 5.864 14.05-7.314-1.243-15.224-1.626-23.68-1.14-23.82 1.371-39.134 15.264-38.105 34.568.522 9.792 5.4 18.216 13.735 23.719 7.047 4.652 16.124 6.927 25.557 6.412 12.458-.683 22.231-5.436 29.049-14.127 5.178-6.6 8.453-15.153 9.899-25.93 5.937 3.583 10.337 8.298 12.767 13.966 4.132 9.635 4.373 25.468-8.546 38.376-11.319 11.308-24.925 16.2-45.488 16.351-22.809-.169-40.06-7.484-51.275-21.742C35.238 139.966 29.811 120.682 29.619 96c.192-24.682 5.619-43.966 16.124-57.339C57.058 24.397 74.309 17.082 97.118 16.913c22.975.17 40.526 7.52 52.171 21.847 5.71 7.026 10.015 15.86 12.853 26.162l16.147-4.308c-3.44-12.68-8.853-23.606-16.219-32.668C147.036 9.607 125.202.195 97.252 0h-.484C68.924.195 47.294 9.643 32.79 28.08 19.884 44.487 13.226 67.315 13.001 95.932L13 96l.001.068c.225 28.617 6.883 51.445 19.789 67.853 14.504 18.437 36.134 27.885 64.308 28.08h.484c24.957-.173 42.502-6.708 57.022-21.218 19.019-19.007 18.447-42.912 12.133-57.556-4.535-10.573-13.188-19.224-25.2-24.239zm-41.036 39.025c-10.427.568-21.258-4.09-21.811-14.101-.412-7.717 5.476-16.324 23.022-17.332a117.3 117.3 0 013.49-.106c6.868 0 13.306.676 19.108 1.919-2.175 27.205-13.407 29.116-23.81 29.62z"/>
+        </svg>
+      )
+    case "X (Twitter)":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+      )
+    default:
+      return null
+  }
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -138,6 +196,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       case 'TikTok': return { bg: 'bg-black/75 backdrop-blur-3xl border-white/20', text: 'text-white', input: 'bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50', btn: 'bg-white text-black hover:bg-white/90', icon: 'text-white' }
       case 'YouTube': return { bg: 'bg-[#FF0000]/80 backdrop-blur-3xl border-white/20', text: 'text-white', input: 'bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50', btn: 'bg-white text-[#FF0000] hover:bg-white/90', icon: 'text-white' }
       case 'LinkedIn': return { bg: 'bg-[#0A66C2]/80 backdrop-blur-3xl border-white/20', text: 'text-white', input: 'bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50', btn: 'bg-white text-[#0A66C2] hover:bg-white/90', icon: 'text-white' }
+      case 'Threads': return { bg: 'bg-black/80 backdrop-blur-3xl border-white/20', text: 'text-white', input: 'bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50', btn: 'bg-white text-black hover:bg-white/90', icon: 'text-white' }
+      case 'X (Twitter)': return { bg: 'bg-black/80 backdrop-blur-3xl border-white/20', text: 'text-white', input: 'bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50', btn: 'bg-white text-black hover:bg-white/90', icon: 'text-white' }
       default: return { bg: 'bg-white/80 backdrop-blur-3xl border-slate-200/50', text: 'text-slate-900', input: 'bg-white/50', btn: 'bg-slate-900 text-white', icon: 'text-slate-900' }
     }
   }
@@ -190,8 +250,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         className="h-12 px-4 group hover:bg-orange-100/50 hover:text-orange-950 justify-between font-semibold text-orange-950/80 cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`flex items-center justify-center w-5 h-5 ${item.color}`}>
-                            <item.icon className="w-5 h-5" />
+                          <div className={`flex items-center justify-center w-5 h-5`}>
+                            <BrandIcon title={item.title} className="w-5 h-5" />
                           </div>
                           <span className="text-base">{item.title}</span>
                         </div>
@@ -295,7 +355,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
-                {selectedNetwork && <selectedNetwork.icon className={`w-6 h-6 ${activeTheme.icon}`} />}
+                {selectedNetwork && <BrandIcon title={selectedNetwork.title} className="w-6 h-6" />}
               </div>
               <DialogTitle className={`text-2xl font-bold ${activeTheme.text}`}>Connect {selectedNetwork?.title}</DialogTitle>
             </div>
