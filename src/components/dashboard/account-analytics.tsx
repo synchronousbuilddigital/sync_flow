@@ -75,7 +75,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
         // I need a way to get the social account ID from handle.
         const { getAccounts } = await import('@/app/actions/accounts');
         const accounts = await getAccounts(brandId);
-        const targetAcc = accounts.find(a => a.network === 'Threads' && a.account_handle === account);
+        const targetAcc = accounts?.find(a => a.network === 'Threads' && a.account_handle === account);
         
         if (targetAcc) {
            const data = await getThreadsAnalytics(targetAcc.id);
