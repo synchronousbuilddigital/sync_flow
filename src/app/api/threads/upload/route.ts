@@ -75,9 +75,29 @@ export async function POST(request: Request) {
 
     const creationId = containerData.id;
 
-    // Wait a brief moment for video processing if necessary (Meta recommends polling for status, but for simplicity we pause briefly)
-    if (mediaUrl && mediaUrl.match(/\.(mp4|mov)$/i)) {
-       await new Promise(resolve => setTimeout(resolve, 3000));
+    // Wait for video processing if necessary by polling status
+    if (mediaUrl && mediaUrl.match(/\.(mp4|mov|webm)$/i)) {
+       let isFinished = false;
+       let attempts = 0;
+       
+       while (!isFinished && attempts < 10) {
+         await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3s between polls
+         attempts++;
+         
+         const statusResponse = await fetch(`https://graph.threads.net/v1.0/${creationId}?fields=status,error_message&access_token=${accessToken}`);
+         const statusData = await statusResponse.json();
+         
+         if (statusData.status === 'FINISHED') {
+           isFinished = true;
+         } else if (statusData.status === 'ERROR') {
+           return NextResponse.json({ error: `Video processing failed: ${statusData.error_message}` }, { status: 500 });
+         }
+         // If IN_PROGRESS, continue looping
+       }
+       
+       if (!isFinished) {
+          return NextResponse.json({ error: "Video processing timed out on Meta's servers." }, { status: 500 });
+       }
     }
 
     // Step 2: Publish the Container
@@ -95,7 +115,7 @@ export async function POST(request: Request) {
 
     if (!publishResponse.ok) {
       console.error("Threads publish error:", publishData);
-      return NextResponse.json({ error: publishData.error?.message || "Failed to publish thread" }, { status: 500 });
+      return NextResponse.json({ error: `Publish Error: ${publishData.error?.message || JSON.stringify(publishData)}` }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, threadId: publishData.id });
