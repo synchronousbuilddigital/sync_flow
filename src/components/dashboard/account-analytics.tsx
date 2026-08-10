@@ -83,11 +83,11 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
              followers: data.followers || 0,
              views: data.likes || 0, // Fallback likes as views
              posts: data.topPosts?.length || 0,
-             followerData: followerData.map(d => ({ ...d, followers: data.followers || 0, views: data.likes || 0 })),
-             balanceData,
-             genderData,
-             ageData,
-             countryData
+             followerData: followerData.map((d, i) => ({ ...d, followers: data.followers || 0, views: data.likes || 0 })),
+             balanceData: balanceData.map(d => ({ ...d, gained: 0, lost: 0 })),
+             genderData: [{ name: 'Unknown', value: 1 }],
+             ageData: ageData.map(d => ({ ...d, value: 0 })),
+             countryData: [{ name: 'Unknown', value: 1 }]
            });
         }
       }
@@ -292,13 +292,13 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider w-full mb-6">Followers by City</h3>
             <div className="space-y-4">
-              {[
+              {(network === 'Threads' ? [] : [
                 { city: 'New York, United States', percent: '15.4%' },
                 { city: 'London, United Kingdom', percent: '8.2%' },
                 { city: 'Sydney, Australia', percent: '5.1%' },
                 { city: 'Toronto, Canada', percent: '4.8%' },
                 { city: 'Berlin, Germany', percent: '3.7%' },
-              ].map((item, i) => (
+              ]).map((item, i) => (
                 <div key={i} className="flex justify-between items-center border-b border-slate-100 pb-2 last:border-0 last:pb-0">
                   <span className="text-sm font-medium text-slate-700">{item.city}</span>
                   <span className="text-sm font-bold text-slate-900">{item.percent}</span>
