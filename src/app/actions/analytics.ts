@@ -264,7 +264,7 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
     const insightsData = await insightsRes.json();
     
     if (insightsData.data && insightsData.data.length > 0) {
-       followers = insightsData.data[0].values[0].value;
+       followers = insightsData.data[0]?.values?.[0]?.value || 0;
     } else if (insightsData.error) {
        console.error("Threads Insights Error:", insightsData.error);
        if (insightsData.error.message.includes("permission")) {
@@ -294,9 +294,9 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
           
           if (metricData.data) {
             metricData.data.forEach((m: any) => {
-               if (m.name === 'likes') threadLikes = m.values[0].value;
-               if (m.name === 'replies') threadReplies = m.values[0].value;
-               if (m.name === 'views') threadViews = m.values[0].value;
+               if (m.name === 'likes') threadLikes = m.values?.[0]?.value || 0;
+               if (m.name === 'replies') threadReplies = m.values?.[0]?.value || 0;
+               if (m.name === 'views') threadViews = m.values?.[0]?.value || 0;
             });
           }
           
