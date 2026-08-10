@@ -76,18 +76,44 @@ export async function GET(request: Request) {
     // We need the brand name
     const { data: brand } = await supabase.from('brands').select('name').eq('id', brandId).single();
 
-    const { error: insertError } = await supabase
+    // Check if account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert({
-        user_id: user.id,
-        brand_id: brandId,
-        brand_name: brand?.name || "Unknown Brand",
-        network: 'Threads',
-        account_handle: profileData.username,
-        access_token: accessToken,
-        refresh_token: null, // Threads uses long-lived tokens instead
-        token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days approx
-      }, { onConflict: 'user_id,brand_id,network,account_handle' });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('brand_id', brandId)
+      .eq('network', 'Threads')
+      .eq('account_handle', profileData.username)
+      .single();
+
+    let insertError = null;
+
+    if (existingAccount) {
+      // Update existing
+      const { error } = await supabase
+        .from('social_accounts')
+        .update({
+          access_token: accessToken,
+          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('id', existingAccount.id);
+      insertError = error;
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from('social_accounts')
+        .insert({
+          user_id: user.id,
+          brand_id: brandId,
+          brand_name: brand?.name || "Unknown Brand",
+          network: 'Threads',
+          account_handle: profileData.username,
+          access_token: accessToken,
+          refresh_token: null,
+          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      insertError = error;
+    }
 
     if (insertError) {
       console.error("Supabase insert error:", insertError);
