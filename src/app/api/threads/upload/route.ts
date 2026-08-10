@@ -33,7 +33,17 @@ export async function POST(request: Request) {
     }
 
     const accessToken = account.access_token;
-    const threadsUserId = "me"; // API uses 'me'
+    
+    // First, fetch the actual numeric Threads User ID, because 'me' might fail on POST endpoints
+    const meResponse = await fetch(`https://graph.threads.net/v1.0/me?access_token=${accessToken}`);
+    const meData = await meResponse.json();
+    
+    if (!meResponse.ok) {
+       console.error("Failed to get numeric ID:", meData);
+       return NextResponse.json({ error: "Failed to verify Threads identity" }, { status: 500 });
+    }
+    
+    const threadsUserId = meData.id;
 
     // Step 1: Create Media Container
     const containerParams = new URLSearchParams();
