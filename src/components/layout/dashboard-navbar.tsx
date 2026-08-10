@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart2, FileText, Inbox, Calendar, Menu, User, Settings, LogOut, Sparkles } from "lucide-react"
+import { BarChart2, FileText, Inbox, Calendar, Menu, User, Settings, LogOut, Sparkles, MessageSquare } from "lucide-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -57,6 +57,7 @@ export function DashboardNavbar() {
 
   const navLinks = [
     { name: "Analytics", href: "/dashboard", icon: BarChart2 },
+    { name: "Content", href: "/content", icon: MessageSquare },
     { name: "Planning", href: "/calendar", icon: Calendar },
     { name: "Reporting", href: "/reporting", icon: FileText },
     { name: "Inbox", href: "/inbox", icon: Inbox },

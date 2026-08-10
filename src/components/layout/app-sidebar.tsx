@@ -9,7 +9,8 @@ import {
   Hash,
   Settings,
   Lightbulb,
-  Trash2
+  Trash2,
+  MessageSquare
 } from "lucide-react"
 
 import {
@@ -39,6 +40,7 @@ const navItems = {
   main: [
     { title: "Summary", url: "/dashboard", icon: FileText, active: true },
     { title: "Ideas", url: "/ideas", icon: Lightbulb },
+    { title: "Content History", url: "/content", icon: MessageSquare },
   ],
   networks: [
     { title: "Instagram", url: "#", color: "text-pink-500", brand: true },
