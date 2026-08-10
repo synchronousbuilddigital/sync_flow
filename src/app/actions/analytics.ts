@@ -264,7 +264,7 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
     const insightsData = await insightsRes.json();
     
     if (insightsData.data && insightsData.data.length > 0) {
-       followers = insightsData.data[0]?.values?.[0]?.value || 0;
+       followers = insightsData.data[0]?.total_value?.value || insightsData.data[0]?.values?.[0]?.value || 0;
     } else if (insightsData.error) {
        console.error("Threads Insights Error:", insightsData.error);
        if (insightsData.error.message.includes("permission")) {
