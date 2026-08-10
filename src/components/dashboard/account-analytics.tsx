@@ -59,15 +59,39 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
 
   useEffect(() => {
     async function fetchStats() {
+      const brandId = localStorage.getItem("activeBrandId");
+      if (!brandId || !account) return;
+
+      setIsLoading(true);
       if (network === 'YouTube') {
-        const brandId = localStorage.getItem("activeBrandId");
-        if (brandId && account) {
-          setIsLoading(true);
-          const stats = await getYouTubeAnalytics(brandId, account);
-          setRealStats(stats);
-          setIsLoading(false);
+        const stats = await getYouTubeAnalytics(brandId, account);
+        setRealStats(stats);
+      } else if (network === 'Threads') {
+        // Dynamic import to avoid circular dependency or import getThreadsAnalytics at top
+        const { getThreadsAnalytics } = await import('@/app/actions/analytics');
+        // Need to get the account ID first for Threads, but getThreadsAnalytics takes accountId.
+        // Actually, getThreadsAnalytics needs the account ID from social_accounts table.
+        // Wait, getYouTubeAnalytics takes brandId and accountHandle.
+        // I need a way to get the social account ID from handle.
+        const { getAccounts } = await import('@/app/actions/accounts');
+        const accounts = await getAccounts(brandId);
+        const targetAcc = accounts.find(a => a.network === 'Threads' && a.account_handle === account);
+        
+        if (targetAcc) {
+           const data = await getThreadsAnalytics(targetAcc.id);
+           setRealStats({
+             followers: data.followers || 0,
+             views: data.likes || 0, // Fallback likes as views
+             posts: data.topPosts?.length || 0,
+             followerData: followerData.map(d => ({ ...d, followers: data.followers || 0, views: data.likes || 0 })),
+             balanceData,
+             genderData,
+             ageData,
+             countryData
+           });
         }
       }
+      setIsLoading(false);
     }
     fetchStats();
   }, [network, account]);
