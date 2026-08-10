@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { 
   Users, Eye, MousePointerClick, Heart,
-  Globe, TrendingUp, Play
+  Globe, TrendingUp, Play, FileText
 } from "lucide-react";
 import { getAccounts, type SocialAccount } from "@/app/actions/accounts";
+import { getThreadsAnalytics } from "@/app/actions/analytics";
 import React from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { toast } from "sonner";
 
 // Icons for the Networks
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -64,6 +66,8 @@ export default function ReportingDashboard() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
 
   const loadAccounts = async () => {
     const brandId = localStorage.getItem("activeBrandId");
@@ -71,7 +75,7 @@ export default function ReportingDashboard() {
       const data = await getAccounts(brandId);
       if (data && data.length > 0) {
         setAccounts(data);
-        setActiveAccount(data[0].id);
+        if (!activeAccount) setActiveAccount(data[0].id);
       } else {
         setAccounts([]);
       }
@@ -86,6 +90,36 @@ export default function ReportingDashboard() {
     return () => window.removeEventListener('brand-changed', handleBrandChange);
   }, []);
 
+  useEffect(() => {
+    if (activeAccount) {
+      loadAnalytics(activeAccount);
+    }
+  }, [activeAccount]);
+
+  const loadAnalytics = async (accountId: string) => {
+    setIsAnalyticsLoading(true);
+    setAnalyticsData(null);
+    try {
+      const selectedAcc = accounts.find(a => a.id === accountId);
+      if (selectedAcc && selectedAcc.network === 'Threads') {
+         const data = await getThreadsAnalytics(accountId);
+         if (data.error) {
+           toast.error(data.error);
+         }
+         setAnalyticsData(data);
+      } else {
+         // Fallback mock data for other networks until implemented
+         const mockData = await getThreadsAnalytics(accountId); 
+         setAnalyticsData(mockData);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load analytics");
+    } finally {
+      setIsAnalyticsLoading(false);
+    }
+  };
+
   const selectedAccount = accounts.find(a => a.id === activeAccount);
   const brandColor = selectedAccount ? (NETWORK_COLORS[selectedAccount.network] || '#4f46e5') : '#4f46e5';
 
@@ -94,11 +128,14 @@ export default function ReportingDashboard() {
       
       {/* Header Tabs Area */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div className="px-8 pt-6 pb-2">
-            <h1 className="text-2xl font-bold text-slate-800 mb-1">Analytics Dashboard</h1>
-            <p className="text-sm text-slate-500 mb-4">
-              Real-time insights and performance metrics for your connected accounts.
-            </p>
+        <div className="px-8 pt-6 pb-2 flex justify-between items-start">
+           <div>
+              <h1 className="text-2xl font-bold text-slate-800 mb-1">Analytics Dashboard</h1>
+              <p className="text-sm text-slate-500 mb-4 flex items-center gap-2">
+                Real-time insights and performance metrics for your connected accounts.
+                {analyticsData?.isMock && <span className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded font-bold">MOCK DATA</span>}
+              </p>
+           </div>
         </div>
         
         {/* Dynamic Account Tabs */}
@@ -124,17 +161,17 @@ export default function ReportingDashboard() {
       </div>
 
       {/* Main Dashboard Content */}
-      {isLoading ? (
+      {isLoading || isAnalyticsLoading ? (
         <div className="p-20 flex justify-center"><div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>
-      ) : selectedAccount ? (
+      ) : selectedAccount && analyticsData ? (
         <div className="max-w-[1400px] mx-auto px-8 pt-8 animate-in fade-in duration-500 slide-in-from-bottom-4">
            
            {/* Top Metric Cards */}
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard title="Total Followers" value="24.5K" trend="+12.5%" icon={<Users />} color={brandColor} />
-              <StatCard title="Impressions" value="1.2M" trend="+45.2%" icon={<Eye />} color={brandColor} />
-              <StatCard title="Profile Clicks" value="8,409" trend="+5.4%" icon={<MousePointerClick />} color={brandColor} />
-              <StatCard title="Engagement Rate" value="4.8%" trend="-1.2%" icon={<Heart />} color={brandColor} isNegative />
+              <StatCard title="Total Followers" value={(analyticsData.followers || 0).toLocaleString()} trend="+0.0%" icon={<Users />} color={brandColor} />
+              <StatCard title="Total Likes" value={(analyticsData.likes || 0).toLocaleString()} trend="+0.0%" icon={<Heart />} color={brandColor} />
+              <StatCard title="Total Replies" value={(analyticsData.replies || 0).toLocaleString()} trend="+0.0%" icon={<MousePointerClick />} color={brandColor} />
+              <StatCard title="Posts Analyzed" value={(analyticsData.topPosts?.length || 0).toString()} trend="Recent" icon={<Eye />} color={brandColor} />
            </div>
 
            {/* Charts and Data Area */}
@@ -145,12 +182,10 @@ export default function ReportingDashboard() {
                  <div className="flex justify-between items-center mb-6">
                    <div>
                      <h3 className="text-lg font-bold text-slate-800">Audience Growth</h3>
-                     <p className="text-xs text-slate-500 mt-1">Followers gained over time</p>
+                     <p className="text-xs text-slate-500 mt-1">Mock chart showing theoretical growth</p>
                    </div>
                    <select className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer">
                      <option>Last 7 Days</option>
-                     <option>Last 30 Days</option>
-                     <option>This Year</option>
                    </select>
                  </div>
                  
@@ -178,31 +213,40 @@ export default function ReportingDashboard() {
 
               {/* Top Performing Posts Sidebar */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                 <h3 className="text-lg font-bold text-slate-800 mb-1">Top Posts</h3>
-                 <p className="text-xs text-slate-500 mb-6">Highest engagement this week</p>
+                 <h3 className="text-lg font-bold text-slate-800 mb-1">Recent Posts</h3>
+                 <p className="text-xs text-slate-500 mb-6">Metrics for recent content</p>
                  
                  <div className="space-y-4 flex-1">
-                    {[1,2,3,4].map((i) => (
-                      <div key={i} className="flex gap-4 items-center p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer group">
-                         <div className="w-16 h-16 rounded-lg bg-slate-200 overflow-hidden shrink-0 relative">
-                            <img src={`https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=200&sig=${i}`} alt="post" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
-                         </div>
+                    {analyticsData.topPosts && analyticsData.topPosts.length > 0 ? analyticsData.topPosts.map((post: any) => (
+                      <div key={post.id} className="flex gap-4 items-center p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer group" onClick={() => post.permalink && window.open(post.permalink, '_blank')}>
+                         {post.thumbnail ? (
+                           <div className="w-16 h-16 rounded-lg bg-slate-200 overflow-hidden shrink-0 relative">
+                              <img src={post.thumbnail} alt="post" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                           </div>
+                         ) : (
+                           <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                              <FileText className="w-6 h-6 text-slate-400" />
+                           </div>
+                         )}
                          <div className="flex-1 min-w-0">
                            <p className="text-xs font-bold text-slate-800 line-clamp-2 mb-2 leading-relaxed">
-                             {i === 1 ? "5 proven strategies to increase your productivity and get more done..." : "Behind the scenes at our new headquarters! Check out the office..."}
+                             {post.caption}
                            </p>
                            <div className="flex items-center gap-3 text-[10px] font-black text-slate-500">
-                              <span className="flex items-center gap-1.5"><Heart className="w-3 h-3 text-pink-500" fill="currentColor" /> {Math.floor(Math.random() * 5000) + 1000}</span>
-                              <span className="flex items-center gap-1.5"><Eye className="w-3 h-3 text-blue-500" /> {Math.floor(Math.random() * 20000) + 5000}</span>
+                              <span className="flex items-center gap-1.5"><Heart className="w-3 h-3 text-pink-500" fill="currentColor" /> {post.likes || 0}</span>
+                              <span className="flex items-center gap-1.5"><Eye className="w-3 h-3 text-blue-500" /> {post.views || 0}</span>
+                              <span className="flex items-center gap-1.5"><MousePointerClick className="w-3 h-3 text-emerald-500" /> {post.replies || 0}</span>
                            </div>
                          </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-sm text-slate-400 text-center py-10">No recent posts found.</div>
+                    )}
                  </div>
                  
                  <button className="w-full mt-6 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl transition-colors border border-slate-200 shadow-sm">
-                   View All Analytics
+                   View Detailed Metrics
                  </button>
               </div>
 

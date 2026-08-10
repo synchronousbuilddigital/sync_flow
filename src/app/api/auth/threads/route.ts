@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   // Store brandId in state to retrieve in callback
   const state = brandId;
 
-  const authUrl = `https://threads.net/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=threads_basic,threads_content_publish&response_type=code&state=${state}`;
+  const authUrl = `https://threads.net/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=threads_basic,threads_content_publish,threads_manage_insights,threads_read_replies&response_type=code&state=${state}`;
 
   return NextResponse.redirect(authUrl);
 }

@@ -208,3 +208,125 @@ export async function getYouTubeAnalytics(brandId: string, accountHandle: string
     return null
   }
 }
+
+export type ThreadsAnalytics = {
+  followers: number;
+  likes: number;
+  replies: number;
+  topPosts: any[];
+  error?: string;
+  isMock?: boolean;
+}
+
+export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAnalytics> {
+  const supabase = await createClient()
+
+  // Verify user is logged in
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "Unauthorized" }
+  }
+
+  // Get the account from DB
+  const { data: account, error: accError } = await supabase
+    .from('social_accounts')
+    .select('*')
+    .eq('id', accountId)
+    .single()
+
+  if (accError || !account) {
+    return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "Account not found" }
+  }
+
+  // If it's not Threads, return mock
+  if (account.network !== 'Threads') {
+    return {
+      followers: 24500,
+      likes: 12000,
+      replies: 3400,
+      topPosts: [
+        { id: 1, caption: "Demo post for " + account.network, likes: 1200, replies: 300, views: 5000, thumbnail: "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=200" }
+      ],
+      isMock: true
+    }
+  }
+
+  // For Threads, fetch real data
+  const accessToken = account.access_token;
+  if (!accessToken) {
+    return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "No access token found" }
+  }
+
+  try {
+    // 1. Fetch Follower Count
+    let followers = 0;
+    const insightsRes = await fetch(`https://graph.threads.net/v1.0/me/threads_insights?metric=followers_count&access_token=${accessToken}`);
+    const insightsData = await insightsRes.json();
+    
+    if (insightsData.data && insightsData.data.length > 0) {
+       followers = insightsData.data[0].values[0].value;
+    } else if (insightsData.error) {
+       console.error("Threads Insights Error:", insightsData.error);
+       if (insightsData.error.message.includes("permission")) {
+         return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "Missing 'threads_manage_insights' permission. Please reconnect your Threads account." }
+       }
+       return { followers: 0, likes: 0, replies: 0, topPosts: [], error: insightsData.error.message }
+    }
+
+    // 2. Fetch Recent Threads (Posts)
+    const threadsRes = await fetch(`https://graph.threads.net/v1.0/me/threads?fields=id,text,media_product_type,media_url,permalink&access_token=${accessToken}`);
+    const threadsData = await threadsRes.json();
+    
+    let totalLikes = 0;
+    let totalReplies = 0;
+    const topPosts = [];
+    
+    if (threadsData.data) {
+       const recentThreads = threadsData.data.slice(0, 5);
+       
+       for (const thread of recentThreads) {
+          const metricRes = await fetch(`https://graph.threads.net/v1.0/${thread.id}/threads_insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
+          const metricData = await metricRes.json();
+          
+          let threadLikes = 0;
+          let threadReplies = 0;
+          let threadViews = 0;
+          
+          if (metricData.data) {
+            metricData.data.forEach((m: any) => {
+               if (m.name === 'likes') threadLikes = m.values[0].value;
+               if (m.name === 'replies') threadReplies = m.values[0].value;
+               if (m.name === 'views') threadViews = m.values[0].value;
+            });
+          }
+          
+          totalLikes += threadLikes;
+          totalReplies += threadReplies;
+          
+          topPosts.push({
+             id: thread.id,
+             caption: thread.text || "Media Post",
+             likes: threadLikes,
+             replies: threadReplies,
+             views: threadViews,
+             thumbnail: thread.media_url || null,
+             permalink: thread.permalink
+          });
+       }
+    }
+    
+    topPosts.sort((a, b) => b.likes - a.likes);
+
+    return {
+      followers,
+      likes: totalLikes,
+      replies: totalReplies,
+      topPosts,
+      isMock: false
+    }
+
+  } catch (error: any) {
+    console.error("Analytics fetch failed:", error);
+    return { followers: 0, likes: 0, replies: 0, topPosts: [], error: error.message || "Failed to fetch analytics" }
+  }
+}
