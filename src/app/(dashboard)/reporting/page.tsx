@@ -192,13 +192,13 @@ export default function ReportingDashboard() {
                  <div className="flex-1 min-h-[350px] w-full mt-4">
                    <ResponsiveContainer width="100%" height="100%">
                      <AreaChart data={analyticsData?.isMock ? MOCK_CHART_DATA : [
-                        { name: 'Mon', followers: analyticsData?.followers || 0 },
-                        { name: 'Tue', followers: analyticsData?.followers || 0 },
-                        { name: 'Wed', followers: analyticsData?.followers || 0 },
-                        { name: 'Thu', followers: analyticsData?.followers || 0 },
-                        { name: 'Fri', followers: analyticsData?.followers || 0 },
-                        { name: 'Sat', followers: analyticsData?.followers || 0 },
-                        { name: 'Sun', followers: analyticsData?.followers || 0 },
+                        { name: 'Mon', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Tue', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Wed', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Thu', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Fri', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Sat', followers: analyticsData?.followers || 0, engagement: 0 },
+                        { name: 'Sun', followers: analyticsData?.followers || 0, engagement: 0 },
                       ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                        <defs>
                          <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
