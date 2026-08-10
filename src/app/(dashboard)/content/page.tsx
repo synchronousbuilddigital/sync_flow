@@ -32,7 +32,7 @@ export default function ContentHistoryPage() {
     if (brandId) {
       const data = await getAccounts(brandId);
       // Filter for Threads only for now since we only implemented Threads content history
-      const threadsAccounts = data.filter(acc => acc.network === 'Threads');
+      const threadsAccounts = (data || []).filter(acc => acc.network === 'Threads');
       
       if (threadsAccounts.length > 0) {
         setAccounts(threadsAccounts);
