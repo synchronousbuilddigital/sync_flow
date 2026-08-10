@@ -34,24 +34,24 @@ export async function POST(request: Request) {
 
     const accessToken = account.access_token;
     
-    // First, fetch the actual numeric Threads User ID, because 'me' might fail on POST endpoints
-    const meResponse = await fetch(`https://graph.threads.net/v1.0/me?access_token=${accessToken}`);
+    // First, fetch the actual numeric Threads User ID
+    const meResponse = await fetch(`https://graph.threads.net/v1.0/me?fields=id&access_token=${accessToken}`);
     const meData = await meResponse.json();
     
-    if (!meResponse.ok) {
+    if (!meResponse.ok || !meData.id) {
        console.error("Failed to get numeric ID:", meData);
-       return NextResponse.json({ error: "Failed to verify Threads identity" }, { status: 500 });
+       return NextResponse.json({ error: `Identity fetch failed: ${JSON.stringify(meData)}` }, { status: 500 });
     }
     
     const threadsUserId = meData.id;
 
     // Step 1: Create Media Container
     const containerParams = new URLSearchParams();
-    containerParams.append('media_type', mediaUrl ? (mediaUrl.match(/\.(mp4|mov)$/i) ? 'VIDEO' : 'IMAGE') : 'TEXT');
+    containerParams.append('media_type', mediaUrl ? (mediaUrl.match(/\.(mp4|mov|webm)$/i) ? 'VIDEO' : 'IMAGE') : 'TEXT');
     containerParams.append('text', content);
     
     if (mediaUrl) {
-       if (mediaUrl.match(/\.(mp4|mov)$/i)) {
+       if (mediaUrl.match(/\.(mp4|mov|webm)$/i)) {
           containerParams.append('video_url', mediaUrl);
        } else {
           containerParams.append('image_url', mediaUrl);
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
 
     if (!containerResponse.ok) {
       console.error("Threads container error:", containerData);
-      return NextResponse.json({ error: containerData.error?.message || "Failed to create media container" }, { status: 500 });
+      return NextResponse.json({ error: `Container Error: ${containerData.error?.message || JSON.stringify(containerData)}` }, { status: 500 });
     }
 
     const creationId = containerData.id;
