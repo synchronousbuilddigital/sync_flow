@@ -182,7 +182,7 @@ export default function ReportingDashboard() {
                  <div className="flex justify-between items-center mb-6">
                    <div>
                      <h3 className="text-lg font-bold text-slate-800">Audience Growth</h3>
-                     <p className="text-xs text-slate-500 mt-1">Mock chart showing theoretical growth</p>
+                     <p className="text-xs text-slate-500 mt-1">Current audience size (Historical data starts collecting today)</p>
                    </div>
                    <select className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer">
                      <option>Last 7 Days</option>
@@ -191,7 +191,15 @@ export default function ReportingDashboard() {
                  
                  <div className="flex-1 min-h-[350px] w-full mt-4">
                    <ResponsiveContainer width="100%" height="100%">
-                     <AreaChart data={MOCK_CHART_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                     <AreaChart data={analyticsData?.isMock ? MOCK_CHART_DATA : [
+                        { name: 'Mon', followers: analyticsData?.followers || 0 },
+                        { name: 'Tue', followers: analyticsData?.followers || 0 },
+                        { name: 'Wed', followers: analyticsData?.followers || 0 },
+                        { name: 'Thu', followers: analyticsData?.followers || 0 },
+                        { name: 'Fri', followers: analyticsData?.followers || 0 },
+                        { name: 'Sat', followers: analyticsData?.followers || 0 },
+                        { name: 'Sun', followers: analyticsData?.followers || 0 },
+                      ]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                        <defs>
                          <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
                            <stop offset="5%" stopColor={brandColor} stopOpacity={0.3}/>
