@@ -238,8 +238,34 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
     return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "Account not found" }
   }
 
-  // If it's not Threads, return mock
-  if (account.network !== 'Threads') {
+  const accessToken = account.access_token;
+  const network = account.network;
+
+  // Handle Mocking logic
+  if (network === 'Threads') {
+    // (Threads specific code remains)
+  } else if (network === 'LinkedIn') {
+     // LinkedIn requires "Marketing Developer Platform" for deep analytics
+     // For now, we mock the stats to prevent crashing
+     let followers = 0;
+     try {
+       const urnId = account.refresh_token ? account.refresh_token.split(':').pop() : '';
+       const profileRes = await fetch("https://api.linkedin.com/v2/networkSizes/urn:li:person:" + urnId + "?edgeType=CompanyFollowedByMember", {
+          headers: { "Authorization": `Bearer ${accessToken}` }
+       });
+       const profileData = await profileRes.json();
+       followers = profileData.firstDegreeSize || 500; 
+     } catch(e) { followers = 500; }
+
+     return {
+       followers: followers,
+       likes: Math.floor(Math.random() * 200),
+       replies: Math.floor(Math.random() * 50),
+       topPosts: [],
+       isMock: true
+     };
+  } else {
+    // If it's not supported, return mock
     return {
       followers: 24500,
       likes: 12000,
@@ -252,7 +278,6 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
   }
 
   // For Threads, fetch real data
-  const accessToken = account.access_token;
   if (!accessToken) {
     return { followers: 0, likes: 0, replies: 0, topPosts: [], error: "No access token found" }
   }

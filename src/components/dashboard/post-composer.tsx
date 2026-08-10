@@ -308,7 +308,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       brandId: localStorage.getItem("activeBrandId") || "",
     }
     
-    if (network === 'YouTube' || network === 'Threads' || network === 'Instagram') {
+    if (network === 'YouTube' || network === 'Threads' || network === 'Instagram' || network === 'LinkedIn') {
       // YouTube and Instagram require mediaUrl, Threads doesn't
       if ((network === 'YouTube' || network === 'Instagram') && !mediaUrl) {
          toast.error(`${network} requires an image or video to be uploaded.`);
@@ -316,10 +316,18 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       }
       setIsPublishing(true);
       try {
-        let endpoint = '/api/threads/upload';
+        let endpoint = '';
         if (network === 'YouTube') endpoint = '/api/youtube/upload';
+        if (network === 'Threads') endpoint = '/api/threads/upload';
+        if (network === 'LinkedIn') endpoint = '/api/linkedin/upload';
         if (network === 'Instagram') endpoint = '/api/instagram/upload';
         
+        if (!endpoint) {
+           toast.error(`Posting to ${network} is not supported yet.`);
+           setIsPublishing(false);
+           return;
+        }
+
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
