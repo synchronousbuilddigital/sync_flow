@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Camera, Image as ImageIcon, Video, X, Check, Clock, Globe, Briefcase, PlayCircle, Play as Youtube, MessageCircle as Twitter, Calendar as CalendarIcon, Send, Sparkles, Wand2, SendHorizontal, RefreshCw, Bot, Bookmark } from "lucide-react"
+import { Camera, Image as ImageIcon, Video, X, Check, Clock, Globe, Briefcase, PlayCircle, Play as Youtube, MessageCircle as Twitter, AtSign, Calendar as CalendarIcon, Send, Sparkles, Wand2, SendHorizontal, RefreshCw, Bot, Bookmark } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import { getCloudinarySignature } from "@/app/actions/cloudinary"
@@ -40,6 +40,7 @@ const NETWORKS: { id: Network; icon: React.ElementType; color: string }[] = [
   { id: 'YouTube', icon: Youtube, color: 'text-red-500 bg-red-50 border-red-200' },
   { id: 'LinkedIn', icon: Briefcase, color: 'text-[#0A66C2] bg-sky-50 border-sky-200' },
   { id: 'Twitter', icon: Twitter, color: 'text-black bg-slate-100 border-slate-200' },
+  { id: 'Threads', icon: AtSign, color: 'text-black bg-slate-100 border-slate-200' },
 ]
 
 import { format, parseISO } from "date-fns"
