@@ -148,7 +148,7 @@ export default function ContentHistoryPage() {
                 <div key={post.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                   {post.media_url && (
                     <div className="w-full h-48 bg-slate-100 border-b border-slate-100 overflow-hidden relative group">
-                      {post.media_product_type === 'VIDEO' ? (
+                      {post.media_type === 'VIDEO' ? (
                         <video src={post.media_url} className="w-full h-full object-cover" controls={false} />
                       ) : (
                         <img src={post.media_url} alt="Post media" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

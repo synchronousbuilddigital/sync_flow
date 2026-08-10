@@ -274,7 +274,7 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
     }
 
     // 2. Fetch Recent Threads (Posts)
-    const threadsRes = await fetch(`https://graph.threads.net/v1.0/me/threads?fields=id,text,media_product_type,media_url,permalink&access_token=${accessToken}`);
+    const threadsRes = await fetch(`https://graph.threads.net/v1.0/me/threads?fields=id,text,media_type,media_url,permalink&access_token=${accessToken}`);
     const threadsData = await threadsRes.json();
     
     let totalLikes = 0;
