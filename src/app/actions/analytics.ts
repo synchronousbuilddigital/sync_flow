@@ -285,7 +285,7 @@ export async function getThreadsAnalytics(accountId: string): Promise<ThreadsAna
        const recentThreads = threadsData.data.slice(0, 5);
        
        for (const thread of recentThreads) {
-          const metricRes = await fetch(`https://graph.threads.net/v1.0/${thread.id}/threads_insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
+          const metricRes = await fetch(`https://graph.threads.net/v1.0/${thread.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
           const metricData = await metricRes.json();
           
           let threadLikes = 0;

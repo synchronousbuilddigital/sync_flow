@@ -62,7 +62,7 @@ export async function getThreadsContent(accountId: string): Promise<{ posts: Thr
     // 2. For each thread, fetch insights and replies
     for (const thread of recentThreads) {
       // Fetch insights
-      const metricRes = await fetch(`https://graph.threads.net/v1.0/${thread.id}/threads_insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
+      const metricRes = await fetch(`https://graph.threads.net/v1.0/${thread.id}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
       const metricData = await metricRes.json();
       
       let threadLikes = 0;
