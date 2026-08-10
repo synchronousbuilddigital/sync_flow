@@ -39,6 +39,7 @@ const NETWORK_META: Record<string, { color: string, icon: any }> = {
   'YouTube': { color: "bg-red-500 text-white", icon: Youtube },
   'LinkedIn': { color: "bg-[#0A66C2] text-white", icon: Linkedin },
   'Twitter': { color: "bg-black text-white", icon: Twitter },
+  'Threads': { color: "bg-slate-900 text-white", icon: Twitter },
 };
 
 export default function CalendarPage() {
@@ -65,7 +66,8 @@ export default function CalendarPage() {
     Instagram: true,
     Facebook: true,
     TikTok: true,
-    YouTube: true
+    YouTube: true,
+    Threads: true
   });
 
   // Fetch posts from Supabase on mount and brand change
@@ -351,6 +353,17 @@ export default function CalendarPage() {
                 />
                 <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors flex items-center gap-2">
                   <Youtube className="w-4 h-4 text-red-500" /> YouTube
+                </span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <Checkbox 
+                  checked={activeFilters.Threads as boolean | undefined}
+                  onCheckedChange={() => handleToggleFilter('Threads')}
+                  id="net-threads" 
+                  className="data-checked:bg-slate-900 data-checked:border-slate-900 border-slate-200" 
+                />
+                <span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors flex items-center gap-2">
+                  <Twitter className="w-4 h-4 text-slate-900" /> Threads
                 </span>
               </label>
             </div>
