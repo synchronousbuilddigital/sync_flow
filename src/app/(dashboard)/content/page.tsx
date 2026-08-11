@@ -31,12 +31,10 @@ export default function ContentHistoryPage() {
     const brandId = localStorage.getItem("activeBrandId");
     if (brandId) {
       const data = await getAccounts(brandId);
-      // Filter for Threads only for now since we only implemented Threads content history
-      const threadsAccounts = (data || []).filter(acc => acc.network === 'Threads');
       
-      if (threadsAccounts.length > 0) {
-        setAccounts(threadsAccounts);
-        if (!activeAccount) setActiveAccount(threadsAccounts[0].id);
+      if (data && data.length > 0) {
+        setAccounts(data);
+        if (!activeAccount) setActiveAccount(data[0].id);
       } else {
         setAccounts([]);
       }
@@ -139,7 +137,7 @@ export default function ContentHistoryPage() {
               </div>
               <h3 className="text-xl font-black text-slate-900 mb-2">No Posts Yet!</h3>
               <p className="text-slate-500 font-medium max-w-md text-sm leading-relaxed">
-                It looks like <span className="font-bold text-slate-700">@{activeAccObj?.account_handle}</span> hasn't published any posts on Threads yet. Once you make a post, it will automatically appear here along with its comments and analytics!
+                It looks like <span className="font-bold text-slate-700">@{activeAccObj?.account_handle}</span> hasn't published any posts on {activeAccObj?.network || 'this network'} yet. Once you make a post, it will automatically appear here along with its comments and analytics!
               </p>
             </div>
           ) : (

@@ -257,16 +257,11 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       const data = await response.json()
       
       if (data.secure_url) {
-        // Apply compression and shrinking transformations
-        let optimizedUrl = data.secure_url
-        if (resourceType === 'image') {
-          optimizedUrl = optimizedUrl.replace('/upload/', '/upload/q_auto,f_auto,w_1080/')
-        } else {
-          optimizedUrl = optimizedUrl.replace('/upload/', '/upload/q_auto,f_auto/')
-        }
+        // Use the original high-quality URL without any shrinking or compression
+        const originalUrl = data.secure_url
         
-        setMediaUrl(optimizedUrl)
-        toast.success("Media uploaded and compressed successfully!")
+        setMediaUrl(originalUrl)
+        toast.success("Media uploaded in original high quality!")
       } else {
         toast.error("Upload failed: " + (data.error?.message || "Unknown error"))
       }
