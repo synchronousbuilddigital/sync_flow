@@ -13,6 +13,7 @@ export interface ThreadPost {
   replies: number;
   views: number;
   comments: ThreadComment[];
+  network?: string;
 }
 
 export interface ThreadComment {
@@ -62,12 +63,15 @@ export async function getThreadsContent(accountId: string): Promise<{ posts: Thr
         text: p.content || "",
         media_type: p.media_urls?.length ? 'IMAGE' : undefined,
         media_url: p.media_urls?.[0],
-        permalink: p.network_post_id ? `https://${account.network.toLowerCase()}.com/post/${p.network_post_id}` : "#",
+        permalink: p.network_post_id && p.network === 'LinkedIn'
+          ? (p.network_post_id.includes('urn:li:') ? `https://www.linkedin.com/feed/update/${p.network_post_id}` : p.network_post_id)
+          : (p.network_post_id ? `https://${account.network.toLowerCase()}.com/post/${p.network_post_id}` : "#"),
         timestamp: p.created_at,
-        likes: Math.floor(Math.random() * 50), // Mock analytics for local posts
+        likes: 0, // We cannot fetch real likes for non-Threads via basic API
         replies: 0,
-        views: Math.floor(Math.random() * 200),
-        comments: []
+        views: 0,
+        comments: [],
+        network: account.network
       }));
       
       return { posts };
@@ -136,7 +140,8 @@ export async function getThreadsContent(accountId: string): Promise<{ posts: Thr
         likes: threadLikes,
         replies: threadReplies,
         views: threadViews,
-        comments
+        comments: comments,
+        network: 'Threads'
       });
     }
 

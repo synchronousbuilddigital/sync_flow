@@ -24,6 +24,8 @@ export interface PostPayload {
   scheduledTimestamp: string | null // ISO string if scheduled, null if instant
   accountName?: string
   brandId: string
+  status?: string
+  networkPostId?: string | null
 }
 
 interface PostComposerProps {
@@ -200,6 +202,23 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
     }
   }, [isOpen, initialData])
 
+  const getLiveLink = () => {
+    if (!initialData?.networkPostId) return null;
+    const id = initialData.networkPostId;
+    switch (initialData.network.toLowerCase()) {
+      case 'linkedin':
+        return `https://www.linkedin.com/feed/update/${id}`;
+      case 'youtube':
+        return `https://youtube.com/watch?v=${id}`;
+      case 'threads':
+        return `https://threads.net/post/${id}`;
+      case 'instagram':
+        return `https://instagram.com/p/${id}`;
+      default:
+        return null;
+    }
+  }
+
   const getPostTypes = (net: Network): PostType[] => {
     switch(net) {
       case 'Instagram': return ['Post', 'Story', 'Reel']
@@ -343,7 +362,13 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
           return;
         }
 
-        toast.success(`Post successfully published to ${network}! (ID: ${result.videoId || result.threadId})`);
+        const networkId = result.videoId || result.threadId || result.postId;
+        payload.networkPostId = networkId;
+        
+        // Clear mediaUrls because the Cloudinary file has been auto-deleted and shouldn't be saved to the database.
+        payload.mediaUrls = [];
+
+        toast.success(`Post successfully published to ${network}! (ID: ${networkId})`);
       } catch (err: any) {
         setIsPublishing(false);
         toast.error(`Upload error: ${err.message}`);
@@ -500,17 +525,35 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
                 />
               </div>
 
-              {/* Media Upload */}
+              {/* Media Upload / Live Link */}
               <div className="space-y-3">
                 <label className="text-sm font-bold text-slate-700 uppercase tracking-wider">5. Media</label>
                 
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileUpload} 
-                  accept="image/*,video/*"
-                  className="hidden" 
-                />
+                {initialData?.status === 'Published' && initialData?.networkPostId ? (
+                  <div className="border-2 border-green-200 bg-green-50 rounded-xl p-8 text-center flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                      <Check className="w-6 h-6 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-green-800">Post is Live!</h3>
+                    <p className="text-sm text-green-600 font-medium max-w-md">The media was successfully published and auto-deleted from our servers to save storage.</p>
+                    <a 
+                      href={getLiveLink() || "#"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-3 px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                      <Globe className="w-4 h-4" /> View Live Post on {initialData.network}
+                    </a>
+                  </div>
+                ) : (
+                  <>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleFileUpload} 
+                      accept="image/*,video/*"
+                      className="hidden" 
+                    />
 
                 {mediaUrl ? (
                   <div className="relative rounded-xl border-2 border-slate-200 overflow-hidden group bg-slate-100 aspect-video flex items-center justify-center">
@@ -549,6 +592,8 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
                     )}
                   </div>
                 )}
+                </>
+                )}
               </div>
 
             </div>
@@ -578,10 +623,14 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
 
               <div className="flex items-center justify-between">
                 <Button variant="ghost" onClick={onClose} className="font-semibold text-slate-600 hover:bg-slate-200">
-                  Cancel
+                  {initialData?.status === 'Published' ? 'Close' : 'Cancel'}
                 </Button>
                 
-                {isScheduling ? (
+                {initialData?.status === 'Published' ? (
+                  <Button onClick={onClose} className="font-semibold bg-slate-800 hover:bg-slate-900 text-white shadow-md">
+                    Done
+                  </Button>
+                ) : isScheduling ? (
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setIsScheduling(false)} className="font-semibold border-slate-300">
                       Cancel Scheduling

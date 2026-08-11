@@ -188,7 +188,9 @@ export default function ContentHistoryPage() {
                       
                       <div className="mt-4 pt-4 flex justify-between items-center text-[11px] font-bold text-slate-400">
                          <span>{new Date(post.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                         <a href={post.permalink} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 hover:underline">View on Threads &rarr;</a>
+                         <a href={post.permalink} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-700 hover:underline">
+                           View on {post.network || activeAccObj?.network || 'Platform'} &rarr;
+                         </a>
                       </div>
                     </div>
                   </div>

@@ -12,6 +12,45 @@ export type ChannelAnalytics = {
   genderData: { name: string, value: number }[];
   ageData: { age: string, value: number }[];
   countryData: { name: string, value: number }[];
+  isPartialData?: boolean; // Flag to indicate if some data is unavailable due to API limits
+}
+
+export async function getLinkedInAnalytics(brandId: string, accountHandle: string): Promise<ChannelAnalytics | null> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    // Count how many published posts this user has for this account in SyncFlow
+    const { count, error } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('brand_id', brandId)
+      .eq('network', 'LinkedIn')
+      .eq('account_name', accountHandle)
+      .eq('status', 'Published');
+
+    if (error) {
+      console.error("Failed to fetch LinkedIn posts count:", error);
+    }
+
+    return {
+      followers: 0,
+      views: 0,
+      posts: count || 0,
+      followerData: [],
+      balanceData: [],
+      genderData: [],
+      ageData: [],
+      countryData: [],
+      isPartialData: true // Indicates that LinkedIn API limits prevent full data
+    };
+  } catch (error) {
+    console.error("LinkedIn Analytics Error:", error);
+    return null;
+  }
 }
 
 export async function getYouTubeAnalytics(brandId: string, accountHandle: string): Promise<ChannelAnalytics | null> {

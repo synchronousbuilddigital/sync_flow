@@ -1,17 +1,29 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { deleteCloudinaryMedia } from "@/app/actions/cloudinary";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    let supabase: any = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json();
+    const { brandId, accountHandle, content, mediaUrl, userId: cronUserId } = body;
+
+    let actualUserId = user?.id;
+    const authHeader = request.headers.get("Authorization");
+    if (!actualUserId && authHeader === `Bearer ${process.env.CRON_SECRET}`) {
+      actualUserId = cronUserId;
+      supabase = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
     }
 
-    const body = await request.json();
-    const { brandId, accountHandle, content, mediaUrl } = body;
+    if (!actualUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     if (!brandId || !content || !accountHandle) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -25,7 +37,7 @@ export async function POST(request: Request) {
     const { data: account, error: accError } = await supabase
       .from('social_accounts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', actualUserId)
       .eq('brand_id', brandId)
       .eq('network', 'Instagram')
       .eq('account_handle', accountHandle)
@@ -89,6 +101,11 @@ export async function POST(request: Request) {
     if (!publishResponse.ok) {
       console.error("Instagram publish error:", publishData);
       return NextResponse.json({ error: publishData.error?.message || "Failed to publish post" }, { status: 500 });
+    }
+
+    // Delete temporary file from Cloudinary since it is now natively hosted on Instagram
+    if (publishData.id && mediaUrl) {
+      deleteCloudinaryMedia(mediaUrl).catch(err => console.error("Cloudinary async delete error:", err));
     }
 
     return NextResponse.json({ success: true, postId: publishData.id });

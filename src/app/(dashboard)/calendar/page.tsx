@@ -194,7 +194,9 @@ export default function CalendarPage() {
       content: fullDbPost.content || "",
       mediaUrls: fullDbPost.media_urls || [],
       scheduledTimestamp: fullDbPost.scheduled_timestamp || null,
-      brandId: activeBrandId || ""
+      brandId: activeBrandId || "",
+      status: fullDbPost.status,
+      networkPostId: fullDbPost.network_post_id
     };
   }, [editingPostId, dbPosts]);
 

@@ -25,7 +25,8 @@ export async function createPost(payload: PostPayload) {
       content: payload.content,
       media_urls: payload.mediaUrls,
       scheduled_timestamp: payload.scheduledTimestamp,
-      status: payload.scheduledTimestamp ? 'Scheduled' : 'Published'
+      status: payload.scheduledTimestamp ? 'Scheduled' : 'Published',
+      network_post_id: payload.networkPostId
     })
     .select()
     .single()
@@ -58,7 +59,8 @@ export async function updatePost(id: string, payload: PostPayload) {
       content: payload.content,
       media_urls: payload.mediaUrls,
       scheduled_timestamp: payload.scheduledTimestamp,
-      status: payload.scheduledTimestamp ? 'Scheduled' : 'Published'
+      status: payload.scheduledTimestamp ? 'Scheduled' : 'Published',
+      network_post_id: payload.networkPostId
     })
     .eq('id', id)
     .select()
@@ -66,7 +68,7 @@ export async function updatePost(id: string, payload: PostPayload) {
 
   if (error) {
     console.error("Supabase update error:", error)
-    throw new Error("Failed to update post in database.")
+    throw new Error("Failed to update post in database: " + error.message)
   }
 
   revalidatePath('/calendar')

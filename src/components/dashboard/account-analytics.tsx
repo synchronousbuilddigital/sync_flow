@@ -2,7 +2,8 @@ import { Camera, Globe, PlayCircle, Play as Youtube, Briefcase, ChevronDown, Dow
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-import { getYouTubeAnalytics, type ChannelAnalytics } from "@/app/actions/analytics"
+import { getYouTubeAnalytics, getLinkedInAnalytics, type ChannelAnalytics } from "@/app/actions/analytics"
+import { AlertCircle } from "lucide-react"
 
 const followerData = [
   { date: 'Jul 3', followers: 1200, following: 140, views: 1200, subscribers: 10 },
@@ -65,6 +66,9 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
       setIsLoading(true);
       if (network === 'YouTube') {
         const stats = await getYouTubeAnalytics(brandId, account);
+        setRealStats(stats);
+      } else if (network === 'LinkedIn') {
+        const stats = await getLinkedInAnalytics(brandId, account);
         setRealStats(stats);
       } else if (network === 'Threads') {
         // Dynamic import to avoid circular dependency or import getThreadsAnalytics at top
@@ -153,24 +157,32 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
           {/* Main Chart */}
           <div className="flex-1 p-6">
             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Growth</h3>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={realStats ? realStats.followerData : followerData}>
-                  <defs>
-                    <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} dy={10} />
-                  <Tooltip 
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                    labelStyle={{fontWeight: 'bold', color: '#1e293b'}}
-                  />
-                  <Area type="monotone" dataKey={network === 'YouTube' ? 'views' : 'followers'} stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorFollowers)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {realStats?.isPartialData ? (
+              <div className="h-[250px] w-full flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500 p-6 text-center">
+                <AlertCircle className="w-8 h-8 mb-3 text-slate-400" />
+                <h4 className="font-bold text-slate-700 mb-1">Data Unavailable</h4>
+                <p className="text-sm">LinkedIn's API restricts follower growth history for personal profiles. We can only track posts published directly through SyncFlow.</p>
+              </div>
+            ) : (
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={realStats ? realStats.followerData : followerData}>
+                    <defs>
+                      <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} dy={10} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                      labelStyle={{fontWeight: 'bold', color: '#1e293b'}}
+                    />
+                    <Area type="monotone" dataKey={network === 'YouTube' ? 'views' : 'followers'} stroke="#8B5CF6" strokeWidth={2} fillOpacity={1} fill="url(#colorFollowers)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           {/* KPI Sidebar */}
@@ -189,9 +201,10 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Balance Chart */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      {!realStats?.isPartialData && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-4">
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Balance of Followers</h3>
           <div className="h-[150px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -205,9 +218,10 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Demographics Section */}
+      {!realStats?.isPartialData && (
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">Demographics</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -308,6 +322,7 @@ export function AccountAnalytics({ network, account }: { network: string, accoun
           </div>
         </div>
       </div>
+      )}
     </div>
   )
 }
