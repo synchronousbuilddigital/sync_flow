@@ -32,10 +32,11 @@ export async function GET(request: Request) {
     'instagram_basic',
     'instagram_content_publish',
     'pages_show_list',
-    'pages_read_engagement'
+    'pages_read_engagement',
+    'business_management'
   ].join(',');
 
-  const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}`;
+  const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}&auth_type=rerequest`;
 
   return NextResponse.redirect(authUrl);
 }

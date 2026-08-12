@@ -91,23 +91,44 @@ export async function GET(request: Request) {
     // 5. Save to database
     const { data: brand } = await supabase.from('brands').select('name').eq('id', brandId).single();
 
-    // Store the instagramAccountId in refresh_token field as a hack, or append it to account_handle? 
-    // We'll store it as part of the access_token string so it's easy to retrieve, or we can just fetch it live later. 
-    // Wait, let's just store the Facebook Page Access Token or User Access token. The user access token can publish if it has permissions.
-    // Actually, we must store the instagramAccountId to publish to it. Let's store it in `refresh_token` column since we don't need a real refresh token for long-lived tokens.
-    
-    const { error: insertError } = await supabase
+    // Check if account already exists
+    const { data: existingAccount } = await supabase
       .from('social_accounts')
-      .upsert({
-        user_id: user.id,
-        brand_id: brandId,
-        brand_name: brand?.name || "Unknown Brand",
-        network: 'Instagram',
-        account_handle: instagramUsername,
-        access_token: accessToken,
-        refresh_token: instagramAccountId, // Using this column to store the IG Account ID
-        token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-      }, { onConflict: 'user_id,brand_id,network,account_handle' });
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('network', 'Instagram')
+      .eq('account_handle', instagramUsername)
+      .maybeSingle();
+
+    let insertError;
+
+    if (existingAccount) {
+      const { error } = await supabase
+        .from('social_accounts')
+        .update({
+          brand_id: brandId,
+          brand_name: brand?.name || "Unknown Brand",
+          access_token: accessToken,
+          refresh_token: instagramAccountId,
+          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq('id', existingAccount.id);
+      insertError = error;
+    } else {
+      const { error } = await supabase
+        .from('social_accounts')
+        .insert([{
+          user_id: user.id,
+          brand_id: brandId,
+          brand_name: brand?.name || "Unknown Brand",
+          network: 'Instagram',
+          account_handle: instagramUsername,
+          access_token: accessToken,
+          refresh_token: instagramAccountId,
+          token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+        }]);
+      insertError = error;
+    }
 
     if (insertError) {
       console.error("Supabase insert error:", insertError);

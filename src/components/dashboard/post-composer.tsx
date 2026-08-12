@@ -352,6 +352,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
             description: content,
             content: content,
             mediaUrl: mediaUrl,
+            postType: postType,
           }),
         });
         const result = await response.json();

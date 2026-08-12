@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const body = await request.json();
-    const { brandId, accountHandle, content, mediaUrl, userId: cronUserId } = body;
+    const { brandId, accountHandle, content, mediaUrl, userId: cronUserId, postType } = body;
 
     let actualUserId = user?.id;
     const authHeader = request.headers.get("Authorization");
@@ -54,13 +54,32 @@ export async function POST(request: Request) {
     // Step 1: Create Media Container
     const isVideo = mediaUrl.match(/\.(mp4|mov)$/i);
     const containerParams = new URLSearchParams();
-    containerParams.append('caption', content);
     
-    if (isVideo) {
-       containerParams.append('media_type', 'VIDEO');
+    // Stories do not support captions via the Graph API
+    if (postType !== 'Story') {
+      containerParams.append('caption', content);
+    }
+    
+    if (postType === 'Reel') {
+       containerParams.append('media_type', 'REELS');
        containerParams.append('video_url', mediaUrl);
+    } else if (postType === 'Story') {
+       containerParams.append('media_type', 'STORIES');
+       if (isVideo) {
+         containerParams.append('video_url', mediaUrl);
+       } else {
+         containerParams.append('image_url', mediaUrl);
+       }
     } else {
-       containerParams.append('image_url', mediaUrl);
+       // Regular Post (Feed)
+       if (isVideo) {
+          // Instagram deprecated standard feed videos. All videos must be uploaded as Reels.
+          containerParams.append('media_type', 'REELS'); 
+          containerParams.append('video_url', mediaUrl);
+       } else {
+          // Regular image post does not require media_type
+          containerParams.append('image_url', mediaUrl);
+       }
     }
     
     containerParams.append('access_token', accessToken);
@@ -80,9 +99,26 @@ export async function POST(request: Request) {
 
     const creationId = containerData.id;
 
-    // Wait a brief moment for video processing if necessary (Meta recommends polling for status)
+    // Wait for video processing by polling the status (Meta recommends polling)
     if (isVideo) {
-       await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second pause for video processing
+       let isReady = false;
+       let attempts = 0;
+       while (!isReady && attempts < 30) {
+         await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3 seconds
+         const statusResponse = await fetch(`https://graph.facebook.com/v17.0/${creationId}?fields=status_code&access_token=${accessToken}`);
+         const statusData = await statusResponse.json();
+         console.log(`[Instagram Upload] Processing attempt ${attempts + 1}: status = ${statusData.status_code}`);
+         if (statusData.status_code === 'FINISHED') {
+           isReady = true;
+         } else if (statusData.status_code === 'ERROR') {
+           console.error("Instagram video processing error:", statusData);
+           return NextResponse.json({ error: "Instagram failed to process the video." }, { status: 500 });
+         }
+         attempts++;
+       }
+       if (!isReady) {
+         return NextResponse.json({ error: "Instagram is taking too long to process the video. Try a shorter video." }, { status: 500 });
+       }
     }
 
     // Step 2: Publish the Container
