@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     
     containerParams.append('access_token', accessToken);
 
-    const containerResponse = await fetch(`https://graph.facebook.com/v17.0/${instagramAccountId}/media`, {
+    const containerResponse = await fetch(`https://graph.instagram.com/v19.0/${instagramAccountId}/media`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: containerParams,
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
        let attempts = 0;
        while (!isReady && attempts < 30) {
          await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3 seconds
-         const statusResponse = await fetch(`https://graph.facebook.com/v17.0/${creationId}?fields=status_code&access_token=${accessToken}`);
+         const statusResponse = await fetch(`https://graph.instagram.com/v19.0/${creationId}?fields=status_code&access_token=${accessToken}`);
          const statusData = await statusResponse.json();
          console.log(`[Instagram Upload] Processing attempt ${attempts + 1}: status = ${statusData.status_code}`);
          if (statusData.status_code === 'FINISHED') {
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     publishParams.append('creation_id', creationId);
     publishParams.append('access_token', accessToken);
 
-    const publishResponse = await fetch(`https://graph.facebook.com/v17.0/${instagramAccountId}/media_publish`, {
+    const publishResponse = await fetch(`https://graph.instagram.com/v19.0/${instagramAccountId}/media_publish`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: publishParams,

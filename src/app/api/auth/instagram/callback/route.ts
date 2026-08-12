@@ -17,8 +17,8 @@ export async function GET(request: Request) {
 
   const brandId = state;
   const redirectUri = `${new URL(request.url).origin}/api/auth/instagram/callback`;
-  const appId = process.env.INSTAGRAM_CLIENT_ID || process.env.FACEBOOK_APP_ID;
-  const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
+  const appId = process.env.INSTAGRAM_CLIENT_ID;
+  const appSecret = process.env.INSTAGRAM_CLIENT_SECRET;
 
   if (!appId || !appSecret) {
     return NextResponse.json({ error: "INSTAGRAM_CLIENT_ID or INSTAGRAM_CLIENT_SECRET is not configured" }, { status: 500 });
@@ -32,9 +32,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 1. Exchange code for user access token
-    const tokenUrl = `https://graph.facebook.com/v17.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
-    const tokenResponse = await fetch(tokenUrl);
+    // 1. Exchange code for short-lived user access token
+    const tokenFormData = new FormData();
+    tokenFormData.append('client_id', appId);
+    tokenFormData.append('client_secret', appSecret);
+    tokenFormData.append('grant_type', 'authorization_code');
+    tokenFormData.append('redirect_uri', redirectUri);
+    tokenFormData.append('code', code);
+
+    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      body: tokenFormData
+    });
+    
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
@@ -42,53 +52,28 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_auth_failed`);
     }
 
-    let accessToken = tokenData.access_token;
+    const shortLivedToken = tokenData.access_token;
 
     // 2. Exchange for long-lived access token
-    const longLivedUrl = `https://graph.facebook.com/v17.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${accessToken}`;
+    const longLivedUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortLivedToken}`;
     const longLivedResponse = await fetch(longLivedUrl);
     const longLivedData = await longLivedResponse.json();
 
-    if (longLivedResponse.ok && longLivedData.access_token) {
-      accessToken = longLivedData.access_token;
+    const accessToken = longLivedResponse.ok && longLivedData.access_token ? longLivedData.access_token : shortLivedToken;
+
+    // 3. Fetch user's Instagram Profile (Username and ID)
+    const profileResponse = await fetch(`https://graph.instagram.com/v19.0/me?fields=id,username&access_token=${accessToken}`);
+    const profileData = await profileResponse.json();
+
+    if (!profileResponse.ok || !profileData.id || !profileData.username) {
+      console.error("Instagram profile fetch error:", profileData);
+      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_profile_failed`);
     }
 
-    // 3. Fetch user's Facebook Pages
-    const pagesResponse = await fetch(`https://graph.facebook.com/v17.0/me/accounts?access_token=${accessToken}`);
-    const pagesData = await pagesResponse.json();
+    const instagramAccountId = profileData.id;
+    const instagramUsername = profileData.username;
 
-    if (!pagesResponse.ok || !pagesData.data || pagesData.data.length === 0) {
-      console.error("Pages fetch error or no pages found:", pagesData);
-      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=no_facebook_pages_found`);
-    }
-
-    let instagramAccountId = null;
-    let instagramUsername = null;
-
-    // 4. Find an Instagram Business Account connected to one of the Pages
-    for (const page of pagesData.data) {
-      const igResponse = await fetch(`https://graph.facebook.com/v17.0/${page.id}?fields=instagram_business_account&access_token=${accessToken}`);
-      const igData = await igResponse.json();
-
-      if (igData.instagram_business_account) {
-        instagramAccountId = igData.instagram_business_account.id;
-        
-        // Fetch Instagram Username
-        const igProfileResponse = await fetch(`https://graph.facebook.com/v17.0/${instagramAccountId}?fields=username&access_token=${accessToken}`);
-        const igProfileData = await igProfileResponse.json();
-        
-        if (igProfileData.username) {
-          instagramUsername = igProfileData.username;
-          break; // Stop at the first valid Instagram account we find
-        }
-      }
-    }
-
-    if (!instagramAccountId || !instagramUsername) {
-      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=no_instagram_business_account`);
-    }
-
-    // 5. Save to database
+    // 4. Save to database
     const { data: brand } = await supabase.from('brands').select('name').eq('id', brandId).single();
 
     // Check if account already exists
@@ -109,7 +94,7 @@ export async function GET(request: Request) {
           brand_id: brandId,
           brand_name: brand?.name || "Unknown Brand",
           access_token: accessToken,
-          refresh_token: instagramAccountId,
+          refresh_token: instagramAccountId, // storing IG ID here
           token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq('id', existingAccount.id);
@@ -124,7 +109,7 @@ export async function GET(request: Request) {
           network: 'Instagram',
           account_handle: instagramUsername,
           access_token: accessToken,
-          refresh_token: instagramAccountId,
+          refresh_token: instagramAccountId, // storing IG ID here
           token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         }]);
       insertError = error;

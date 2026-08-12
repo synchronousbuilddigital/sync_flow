@@ -27,10 +27,16 @@ export async function GET(request: Request) {
   // Store brandId in state to retrieve in callback
   const state = brandId;
 
-  // We request permissions for Instagram Basic Display API
-  const scopes = 'user_profile,user_media';
+  // We request permissions for Instagram Login for Business
+  const scopes = [
+    'instagram_business_basic',
+    'instagram_business_manage_messages',
+    'instagram_business_manage_comments',
+    'instagram_business_content_publish',
+    'instagram_business_manage_insights'
+  ].join(',');
 
-  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}`;
+  const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scopes}&state=${state}`;
 
   return NextResponse.redirect(authUrl);
 }
