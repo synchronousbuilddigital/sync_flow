@@ -47,3 +47,5 @@ test_fb_upload.js
 test_fb_video.js
 test_delete.js
 test_rls.js
+test_fb_token2.js
+test_fb_token.js

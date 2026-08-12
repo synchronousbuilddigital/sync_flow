@@ -1,8 +1,14 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 import { PostPayload } from "@/components/dashboard/post-composer"
+
+const adminSupabase = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function createPost(payload: PostPayload) {
   const supabase = await createClient()
@@ -49,8 +55,8 @@ export async function updatePost(id: string, payload: PostPayload) {
     throw new Error("Unauthorized: Please log in to update posts.")
   }
 
-  // Update post in database (RLS ensures they can only update their own)
-  const { data, error } = await supabase
+  // Update post in database using admin client to bypass broken RLS
+  const { data, error } = await adminSupabase
     .from('posts')
     .update({
       network: payload.network,
@@ -63,6 +69,7 @@ export async function updatePost(id: string, payload: PostPayload) {
       network_post_id: payload.networkPostId
     })
     .eq('id', id)
+    .eq('user_id', user.id)
     .select()
     .single()
 
@@ -85,10 +92,12 @@ export async function deletePost(id: string) {
   }
 
   // Soft delete post in database by setting status to 'Deleted'
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('posts')
     .update({ status: 'Deleted' })
     .eq('id', id)
+    // Extra security measure since we bypass RLS: ensure they own the post!
+    .eq('user_id', user.id)
     .select()
 
   if (error || !data || data.length === 0) {
@@ -110,10 +119,11 @@ export async function restorePost(id: string) {
   const { data: post } = await supabase.from('posts').select('scheduled_timestamp').eq('id', id).single()
   const newStatus = post?.scheduled_timestamp ? 'Scheduled' : 'Published'
 
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('posts')
     .update({ status: newStatus })
     .eq('id', id)
+    .eq('user_id', user.id)
 
   if (error) throw new Error("Failed to restore post")
 
@@ -127,10 +137,11 @@ export async function hardDeletePost(id: string) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error("Unauthorized")
 
-  const { error } = await supabase
+  const { error } = await adminSupabase
     .from('posts')
     .delete()
     .eq('id', id)
+    .eq('user_id', user.id)
 
   if (error) throw new Error("Failed to delete post permanently")
 

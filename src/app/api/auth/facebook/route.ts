@@ -30,7 +30,8 @@ export async function GET(request: Request) {
   const scopes = [
     'pages_show_list',
     'pages_read_engagement',
-    'pages_manage_posts'
+    'pages_manage_posts',
+    'publish_video'
   ].join(',');
 
   const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}&auth_type=rerequest`;
