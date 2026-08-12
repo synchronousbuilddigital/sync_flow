@@ -81,10 +81,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: data.error?.message || "Failed to publish post to Facebook" }, { status: 500 });
     }
 
-    // Delete temporary file from Cloudinary if media was used
-    if (data.id && mediaUrl) {
-      deleteCloudinaryMedia(mediaUrl).catch(err => console.error("Cloudinary async delete error:", err));
-    }
+    // We cannot delete the Cloudinary media immediately because Facebook downloads and processes videos asynchronously.
+    // If we delete it now, Facebook's background workers will get a 404 when they try to download the video.
 
     return NextResponse.json({ success: true, postId: data.id });
   } catch (error: any) {
