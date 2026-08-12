@@ -16,8 +16,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Note: For Instagram Graph API, we actually log in via Facebook OAuth
-  const appId = process.env.INSTAGRAM_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+  // User specifically requested to use the legacy Instagram Basic Display API
+  const appId = process.env.INSTAGRAM_CLIENT_ID || '1361463619453040';
   const redirectUri = `${new URL(request.url).origin}/api/auth/instagram/callback`;
   
   if (!appId) {
@@ -27,16 +27,10 @@ export async function GET(request: Request) {
   // Store brandId in state to retrieve in callback
   const state = brandId;
 
-  // We request permissions for both Facebook pages and Instagram graph API publishing
-  const scopes = [
-    'instagram_basic',
-    'instagram_content_publish',
-    'pages_show_list',
-    'pages_read_engagement',
-    'business_management'
-  ].join(',');
+  // We request permissions for Instagram Basic Display API
+  const scopes = 'user_profile,user_media';
 
-  const authUrl = `https://www.facebook.com/v17.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}&auth_type=rerequest`;
+  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&response_type=code&state=${state}`;
 
   return NextResponse.redirect(authUrl);
 }
