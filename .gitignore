@@ -42,3 +42,8 @@ next-env.d.ts
 
 test_fb.js
 test_fb2.js
+test_fb3.js
+test_fb_upload.js
+test_fb_video.js
+test_delete.js
+test_rls.js

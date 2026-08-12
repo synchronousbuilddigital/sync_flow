@@ -85,14 +85,15 @@ export async function deletePost(id: string) {
   }
 
   // Soft delete post in database by setting status to 'Deleted'
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('posts')
     .update({ status: 'Deleted' })
     .eq('id', id)
+    .select()
 
-  if (error) {
-    console.error("Supabase delete error:", error)
-    throw new Error("Failed to delete post.")
+  if (error || !data || data.length === 0) {
+    console.error("Supabase delete error:", error || "No rows updated")
+    throw new Error("Failed to delete post. You may not have permission, or it was already deleted.")
   }
 
   revalidatePath('/calendar')

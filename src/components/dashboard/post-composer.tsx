@@ -322,7 +322,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
       brandId: localStorage.getItem("activeBrandId") || "",
     }
     
-    if (network === 'YouTube' || network === 'Threads' || network === 'Instagram' || network === 'LinkedIn') {
+    if (network === 'YouTube' || network === 'Threads' || network === 'Instagram' || network === 'LinkedIn' || network === 'Facebook') {
       // YouTube and Instagram require mediaUrl, Threads doesn't
       if ((network === 'YouTube' || network === 'Instagram') && !mediaUrl) {
          toast.error(`${network} requires an image or video to be uploaded.`);
@@ -335,6 +335,7 @@ export function PostComposer({ isOpen, onClose, onSavePost, initialData }: PostC
         if (network === 'Threads') endpoint = '/api/threads/upload';
         if (network === 'LinkedIn') endpoint = '/api/linkedin/upload';
         if (network === 'Instagram') endpoint = '/api/instagram/upload';
+        if (network === 'Facebook') endpoint = '/api/facebook/upload';
         
         if (!endpoint) {
            toast.error(`Posting to ${network} is not supported yet.`);
