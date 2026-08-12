@@ -235,6 +235,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return;
     }
 
+    if (selectedNetwork.title === 'Facebook') {
+      window.location.href = `/api/auth/facebook?brandId=${activeBrandId}`;
+      return;
+    }
+
     if (!userIdInput.trim()) return;
 
     const res = await addAccount(selectedNetwork.title, userIdInput, activeBrandId, activeBrand.name);
