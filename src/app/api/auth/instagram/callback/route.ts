@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const state = searchParams.get('state'); // This contains our brandId
+  const state = searchParams.get('state');
   const error = searchParams.get('error');
 
   if (error) {
@@ -17,8 +17,8 @@ export async function GET(request: Request) {
 
   const brandId = state;
   const redirectUri = `${new URL(request.url).origin}/api/auth/instagram/callback`;
-  const appId = process.env.INSTAGRAM_CLIENT_ID;
-  const appSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+  const appId = process.env.INSTAGRAM_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+  const appSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
 
   if (!appId || !appSecret) {
     return NextResponse.json({ error: "INSTAGRAM_CLIENT_ID or INSTAGRAM_CLIENT_SECRET is not configured" }, { status: 500 });
@@ -40,7 +40,8 @@ export async function GET(request: Request) {
     tokenFormData.append('redirect_uri', redirectUri);
     tokenFormData.append('code', code);
 
-    const tokenResponse = await fetch('https://graph.instagram.com/oauth/access_token', {
+    // Always use api.instagram.com for the token exchange for Instagram Login
+    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
       method: 'POST',
       body: tokenFormData
     });
@@ -53,26 +54,42 @@ export async function GET(request: Request) {
     }
 
     const shortLivedToken = tokenData.access_token;
+    const instagramAccountId = tokenData.user_id; // Sometimes provided directly by token exchange
 
-    // 2. Exchange for long-lived access token
+    // 2. Try to get long-lived access token
+    let accessToken = shortLivedToken;
     const longLivedUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${appSecret}&access_token=${shortLivedToken}`;
     const longLivedResponse = await fetch(longLivedUrl);
     const longLivedData = await longLivedResponse.json();
 
-    const accessToken = longLivedResponse.ok && longLivedData.access_token ? longLivedData.access_token : shortLivedToken;
+    if (longLivedResponse.ok && longLivedData.access_token) {
+      accessToken = longLivedData.access_token;
+    }
 
     // 3. Fetch user's Instagram Profile (Username and ID)
-    const profileResponse = await fetch(`https://graph.instagram.com/v19.0/me?fields=id,username&access_token=${accessToken}`);
-    const profileData = await profileResponse.json();
+    let profileData: any = {};
+    let finalAccountId = instagramAccountId;
+    let finalUsername = "";
 
-    if (!profileResponse.ok || !profileData.id || !profileData.username) {
+    // Try Graph API endpoint (v19.0) first
+    let profileResponse = await fetch(`https://graph.instagram.com/v19.0/me?fields=id,username&access_token=${accessToken}`);
+    profileData = await profileResponse.json();
+
+    // Fallback to legacy Basic Display endpoint if it fails (Unsupported request)
+    if (!profileResponse.ok || !profileData.username) {
+      console.log("v19.0/me failed, falling back to /me:", profileData);
+      profileResponse = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`);
+      profileData = await profileResponse.json();
+    }
+
+    if (!profileResponse.ok || !profileData.username) {
       console.error("Instagram profile fetch error:", profileData);
       const errorMsg = profileData.error?.message || 'unknown_error';
       return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_profile_failed&reason=${encodeURIComponent(errorMsg)}`);
     }
 
-    const instagramAccountId = profileData.id;
-    const instagramUsername = profileData.username;
+    finalAccountId = profileData.id || instagramAccountId;
+    finalUsername = profileData.username;
 
     // 4. Save to database
     const { data: brand } = await supabase.from('brands').select('name').eq('id', brandId).single();
@@ -83,7 +100,7 @@ export async function GET(request: Request) {
       .select('id')
       .eq('user_id', user.id)
       .eq('network', 'Instagram')
-      .eq('account_handle', instagramUsername)
+      .eq('account_handle', finalUsername)
       .maybeSingle();
 
     let insertError;
@@ -95,7 +112,7 @@ export async function GET(request: Request) {
           brand_id: brandId,
           brand_name: brand?.name || "Unknown Brand",
           access_token: accessToken,
-          refresh_token: instagramAccountId, // storing IG ID here
+          refresh_token: finalAccountId,
           token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .eq('id', existingAccount.id);
@@ -108,9 +125,9 @@ export async function GET(request: Request) {
           brand_id: brandId,
           brand_name: brand?.name || "Unknown Brand",
           network: 'Instagram',
-          account_handle: instagramUsername,
+          account_handle: finalUsername,
           access_token: accessToken,
-          refresh_token: instagramAccountId, // storing IG ID here
+          refresh_token: finalAccountId,
           token_expires_at: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
         }]);
       insertError = error;
@@ -121,8 +138,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=database_error`);
     }
 
-    // Redirect back to dashboard indicating success
-    return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?network=Instagram&account=${instagramUsername}`);
+    return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?network=Instagram&account=${finalUsername}`);
   } catch (err) {
     console.error("Instagram callback exception:", err);
     return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=server_error`);

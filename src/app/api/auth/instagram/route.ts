@@ -16,18 +16,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // User specifically requested to use the legacy Instagram Basic Display API
-  const appId = process.env.INSTAGRAM_CLIENT_ID || '1361463619453040';
+  const appId = process.env.INSTAGRAM_CLIENT_ID || process.env.FACEBOOK_APP_ID;
   const redirectUri = `${new URL(request.url).origin}/api/auth/instagram/callback`;
   
   if (!appId) {
-    return NextResponse.json({ error: "INSTAGRAM_CLIENT_ID is not configured in environment variables" }, { status: 500 });
+    return NextResponse.json({ error: "INSTAGRAM_CLIENT_ID is not configured" }, { status: 500 });
   }
 
-  // Store brandId in state to retrieve in callback
   const state = brandId;
 
-  // We request permissions for Instagram Login for Business
+  // Instagram Login for Business scopes
   const scopes = [
     'instagram_business_basic',
     'instagram_business_manage_messages',
@@ -36,6 +34,7 @@ export async function GET(request: Request) {
     'instagram_business_manage_insights'
   ].join(',');
 
+  // Using www.instagram.com for direct Instagram Login!
   const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scopes}&state=${state}`;
 
   return NextResponse.redirect(authUrl);
