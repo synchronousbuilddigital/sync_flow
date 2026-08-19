@@ -76,9 +76,23 @@ export async function GET(request: Request) {
     let profileResponse = await fetch(`https://graph.instagram.com/v19.0/me?fields=id,username&access_token=${accessToken}`);
     profileData = await profileResponse.json();
 
-    // Fallback to legacy Basic Display endpoint if it fails (Unsupported request)
+    // Fallback 1: Try Facebook Graph API (some new Instagram Login apps use this)
     if (!profileResponse.ok || !profileData.username) {
-      console.log("v19.0/me failed, falling back to /me:", profileData);
+      console.log("graph.instagram.com/v19.0/me failed, falling back to graph.facebook.com/v19.0/me:", profileData);
+      profileResponse = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,username&access_token=${accessToken}`);
+      profileData = await profileResponse.json();
+    }
+
+    // Fallback 2: Try specific Account ID node
+    if ((!profileResponse.ok || !profileData.username) && instagramAccountId) {
+      console.log("graph.facebook.com/v19.0/me failed, falling back to specific account ID:", profileData);
+      profileResponse = await fetch(`https://graph.instagram.com/v19.0/${instagramAccountId}?fields=id,username&access_token=${accessToken}`);
+      profileData = await profileResponse.json();
+    }
+
+    // Fallback 3: Try legacy Basic Display endpoint
+    if (!profileResponse.ok || !profileData.username) {
+      console.log("Account ID node failed, falling back to legacy /me:", profileData);
       profileResponse = await fetch(`https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`);
       profileData = await profileResponse.json();
     }
