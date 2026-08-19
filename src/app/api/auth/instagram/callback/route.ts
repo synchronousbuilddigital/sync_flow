@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     tokenFormData.append('redirect_uri', redirectUri);
     tokenFormData.append('code', code);
 
-    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+    const tokenResponse = await fetch('https://graph.instagram.com/oauth/access_token', {
       method: 'POST',
       body: tokenFormData
     });
