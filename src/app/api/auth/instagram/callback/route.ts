@@ -67,7 +67,8 @@ export async function GET(request: Request) {
 
     if (!profileResponse.ok || !profileData.id || !profileData.username) {
       console.error("Instagram profile fetch error:", profileData);
-      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_profile_failed`);
+      const errorMsg = profileData.error?.message || 'unknown_error';
+      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_profile_failed&reason=${encodeURIComponent(errorMsg)}`);
     }
 
     const instagramAccountId = profileData.id;
