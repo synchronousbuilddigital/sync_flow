@@ -64,6 +64,12 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           
           <div className="w-full max-w-[460px]">
             {children}
+            
+            <div className="mt-8 text-center">
+              <a href="/privacy" className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">
+                Privacy Policy
+              </a>
+            </div>
           </div>
         </div>
       </div>

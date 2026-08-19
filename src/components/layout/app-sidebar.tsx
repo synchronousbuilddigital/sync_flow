@@ -56,6 +56,7 @@ const navItems = {
     { title: "Reports", url: "/reporting/campaigns", icon: FileBarChart },
     { title: "Hashtag Tracker", url: "/reporting/studio", icon: Hash },
     { title: "Brand settings", url: "/settings", icon: Settings },
+    { title: "Privacy Policy", url: "/privacy", icon: FileText },
   ]
 }
 
