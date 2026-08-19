@@ -50,7 +50,8 @@ export async function GET(request: Request) {
 
     if (!tokenResponse.ok) {
       console.error("Instagram token error:", tokenData);
-      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_auth_failed`);
+      const errorMsg = tokenData.error_message || tokenData.error?.message || tokenData.error_type || 'unknown_error';
+      return NextResponse.redirect(`${new URL(request.url).origin}/dashboard?error=instagram_auth_failed&reason=${encodeURIComponent(errorMsg)}`);
     }
 
     const shortLivedToken = tokenData.access_token;
